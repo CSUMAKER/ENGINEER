@@ -1,0 +1,149 @@
+
+written by Fanyaowen, 20190608
+
+
+__asm void PendSV_Handler(void)
+【用户不调用】软件触发中断，用于任务切换
+
+void	irq_close(void)
+void	irq_restore(void)
+【用户一般不需要调用】中断关闭和开启
+
+void	tick_init(int ms)
+void	tick_start(void)
+void	SysTick_Handler(void)
+【用户不调用】systick初始化、启动、中断
+
+【互斥量，可以用于保护数据段等功能】
+void	mutex_init(p_mutex pm)
+【用户调用】先定义互斥锁指针pm为全局变量，然后在任务中执行此函数初始化互斥锁
+void	mutex_update_ceiling(p_mutex pm)
+【用户不调用】更新互斥锁阻塞队列里任务最高优先级，将占有互斥锁的任务优先级设为此优先级
+void	mutex_lock(p_mutex pm)
+【用户调用】获取互斥锁，若无法获取则阻塞当前任务，直到该互斥锁被释放
+void	mutex_unlock(p_mutex pm)
+【用户调用】返还互斥锁
+U32	mutex_lock_try(p_mutex pm)
+【用户调用】获取互斥锁，返回值为互斥锁状态，1为获取成功，0为被占用，不阻塞当前任务。
+
+【信号量和互斥锁类似，区别在于信号量可以有多把“钥匙”，互斥锁只有一把“钥匙”】
+void	sem_init(p_sem psem, U32 cnt)
+void	sem_ask(p_sem psem)
+void	sem_release(p_sem psem)
+【用户调用】同互斥锁
+
+void	pipe_init(p_pipe pp, U16 sz)
+void	pipe_write(p_pipe pp, u8 data)
+U8	pipe_read(p_pipe pp)
+【用户一般不需要调用】字符串缓冲区，用于printf
+
+p_TCB	task_create_full(task_f func, void* param, task_prio_t prio, U32 print_size)
+【用户调用】创建任务，可指定任务参数、优先级、字符串缓冲区大小
+
+void	makos_init(void)
+【用户调用】操作系统初始化
+void	makos_run(void)
+【用户调用】操作系统开始运行，放置在main结尾
+p_TCB	makos_get_prio_highest(void)
+【用户一般不需要调用】获取最高优先级任务的指针
+void	makos_update_switch(void)
+【用户不调用】更新任务列表，切换至最高优先级任务
+
+【信息邮箱，带保护和先入先出缓冲区的信息块，可用于任务间传送数据，接口使用同互斥锁类似】
+void	msg_init(p_msg pmsg, U8 amount, U8 size)
+【用户调用】初始化
+void*	msg_get_write(p_msg pmsg)
+void	msg_write_finish(p_msg pmsg)
+【用户调用】获取一个信息块用于写操作，并在完成操作后通知操作系统，组合使用
+void*	msg_get_read(p_msg pmsg)
+void	msg_read_finish(p_msg pmsg)
+【用户调用】同上，区别在于这是读不是写
+void*	msg_get_write_last(p_msg pmsg)
+void	msg_write_finish_last(p_msg pmsg)
+【用户调用】同上，区别在于这是写最后一个信息块，即读取时会读取到的第一个信息块
+void*	msg_get_read_try(p_msg pmsg)
+void	msg_read_finish_try(p_msg pmsg)
+【用户调用】同上，不阻塞，组合使用，不能混用
+void*	msg_get_write_try(p_msg pmsg)
+【用户调用】不阻塞，和msg_write_finish组合使用
+
+void	task_delay_ms(U32 tick)
+【用户调用】阻塞当前任务，于tick毫秒后唤醒
+void	task_period_set(U32 tick)
+【未实现】
+void	task_period_delay(void)
+【未实现】
+void	task_yield(void)
+【未实现】本意是切换到同优先级其他任务，但不阻塞当前任务
+void	task_suspend(p_TCB ptcb)
+【用户一般不需要调用】阻塞任务
+void	task_resume(p_TCB ptcb)
+【用户一般不需要调用】唤醒任务
+void	task_set_prio(p_TCB ptcb, task_prio_t prio)
+【用户一般不需要调用】设置任务优先级
+
+os_error	init_tick_callback(void)
+void keep_clock_awake(U32 clock)
+void		tick_handle(void)
+【用户不调用】系统时钟中断
+
+void	task_PRINT(void* param)
+【系统任务】字符串打印任务，目的是使字符串能非阻塞地输出
+
+void	set_cpu_print(U32 param)
+【用户不调用】字符串命令函数，可以显示cpu占用率
+void	task_idle(void* param)
+【系统任务】空闲任务，最低优先级
+
+【字符串命令功能，可以通过串口输入使系统执行预先指定的函数，可以带有参数，可用于运行时修改参数、显示信息等功能】
+void	resolver_init(void)
+【用户不调用】字符串命令需要的一些初始化
+void	resolve_add(U8* name, resolve_f func)
+【用户调用】添加一个字符串命令
+U8	string_compare(const U8* s1, const U8* s2, U32 length）
+U32	pow_of_10(U8 p)
+U32	string_get_U32(const U8* s, U32 length)
+char*	cut_string(char* s, U32 length)
+double myatof(const char* sptr)
+【用户一般不调用】对字符串的一些操作
+void	task_resolver(void* param)
+【系统任务】字符串命令解析函数，能够从串口接受命令和参数，执行指定的函数
+
+【中断控制功能，为了避免某些高优先级中断执行时间太长而阻塞低优先级中断，将中断执行函数和中断的发生分离，在中断处理任务里执行中断函数，从而使中断之间不会相互阻塞】
+U32	irq_get_active(void)
+【用户一般不需要调用】中断里调用，获取当前中断号
+void	makos_irq_handle(void)
+【放在中断函数里】记录中断的发生
+void	add_irq_handle(irq_id_t id, irq_handle_f func, U32 prio)
+【用户调用】添加中断回调函数
+void	task_irq_handle(void* param)
+【系统任务】中断处理任务，最高优先级，在这里执行中断回调函数
+
+【记录功能，和printf类似，但是不会立即输出，而是储存起来，通过字符串命令来控制输出，可用于高频率的信息输出或系统日志等】
+void	record_control(U32 param)
+【用户不调用】字符串命令函数，可以打印record里的内容
+void	task_record(void* param)
+【系统任务】record打印任务
+
+U8*	F2S(float data, U8* buff)
+void	mak_print_u8(U8 data)
+void	mak_print_string(U8* data)
+void	mak_print_s32(S32 data)
+void	mak_print_float(float data)
+【用户一般不需要调用】浮点到字符串的转换，各种格式的打印函数
+U32	mak_print(U8* fmt, U32* data)
+【用户调用】自行实现的printf函数
+void	mak_print3(U8* fmt, void* p1, void* p2, void* p3)
+【用户调用】自行实现的printf函数，能接受三个参数
+
+
+
+
+
+
+
+
+
+
+
+

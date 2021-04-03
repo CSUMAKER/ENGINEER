@@ -1,0 +1,41 @@
+匿名上位机调参使用说明：
+
+一、使用全局变量为接口，数据类型为U16
+ANO_data.pid1.kp
+ANO_data.pid1.ki
+ANO_data.pid1.kd
+......
+ANO_data.pid18.kp
+ANO_data.pid18.ki
+ANO_data.pid18.kd
+
+即为和上位机保持通讯的pid1的三个变量，直接在需要的地方
+temp=ANO_data.pid1.kp;
+使用即可
+
+二、上位机支持读pid的操作，在需要处
+ANO_data.pid1.kp=temp;
+即可
+
+三、需要包含头文件#include "task_Ano.h"（已经在headfile.h里了）
+
+四、调用示例：
+#include "headfile.h"
+void	task_temp(void* param)
+{
+		U16 temp1=5;
+		ANO_data.pid1.kp=temp1;
+		while(1)
+		{
+			temp1=ANO_data.pid1.kp;
+			task_delay_ms(10);
+		}
+}
+
+五、上位机使用步骤：
+1、打开软件后左侧程序设置里选串口模式，设置好端口号与波特率
+2、左侧选择飞控设置出现pid调节页面
+3、先点击读取pid
+4、修改参数
+5、点击写入pid
+6、go to 步骤4

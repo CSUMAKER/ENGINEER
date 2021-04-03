@@ -1,0 +1,8 @@
+{
+    "files.associations": {
+        "headfile.h": "c",
+        "task_chassis.h": "c",
+        "makos_includes.h": "c",
+        "motor.h": "c"
+    }
+}
