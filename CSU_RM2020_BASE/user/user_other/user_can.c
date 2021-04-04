@@ -236,26 +236,11 @@ void CAN1_RX0_IRQHandler(void)
 				canrate.inc.rx_motor[14]++;
 			}
 			
-			
-			
-			//测试
-//			if(RxMessage.StdId == 0x206)
-//			{
-//				canrate.inc.rx_motor[5]++;
-//			}
-			
-			//底盘测试用陀螺仪
-			if(RxMessage.StdId == 0x513)
-			{
-				circle_count_engineer(&temp_chassis_yaw,(U32)((int16_t)(RxMessage.Data[5]<<8|RxMessage.Data[4])),3600,400);
-				engineer.chassis.YAW=(temp_chassis_yaw.angle+temp_chassis_yaw.circle*3600);
-			}
-			
 		}
 	}
 }
 
-float Real_Center = 0,Dir_angle = 0,Dir_angle_adj = 22;	//云台与底盘夹角相关
+float Real_Center = 0,Dir_angle = 0,Dir_angle_adj = 0;	//云台与底盘夹角相关
 int Dir_circle = 0;										//云台相对底盘旋转的圈数
 
 int16_t mpu_yaw_speed;				//mpu6050角速度
@@ -346,15 +331,21 @@ void	CAN2_RX0_IRQHandler(void)
 			//云台
 			if (RxMessage.StdId == 0x207)
 			{
-//				engineer_control.holder.position_C = (S32)(motor_circle_simple[1][6].angle) + motor_circle_simple[1][6].circle * 8192 - holder_init_position;
-//				if (!flag_holder)
-//				{
-//					if (engineer_control.holder.position_C != 0)
-//					{
-//						holder_init_position = engineer_control.holder.position_C;
-//						flag_holder = 1;
-//					}
-//				}
+				engineer_control.holder.yaw_angle= (S32)(motor_circle_simple[1][6].angle) + motor_circle_simple[1][6].circle * 8192 - holder_init_position;
+				if (!flag_holder)
+				{
+					if (engineer_control.holder.position_C != 0)
+					{
+						holder_init_position = engineer_control.holder.yaw_angle;
+						flag_holder = 1;
+					}
+				}
+				Dir_angle = (engineer_control.holder.yaw_angle + engineer_control.holder.position_C) * 360 / 8192 +Dir_angle_adj;
+        if(Dir_angle > 180)
+					Dir_angle -= 360;
+				if(Dir_angle < -180)
+					Dir_angle += 360;
+				
 				engineer_control.holder.speed_C = (float)RPC_ZERO((S16)(RxMessage.Data[2] << 8 | RxMessage.Data[3]), 10);
 				engineer_control.holder.current_C = engineer_control.holder.current_C * (1 - n) + n * (float)RPC_ZERO((S16)(RxMessage.Data[4] << 8 | RxMessage.Data[5]), 10);
 				canrate.inc.rx_motor[6]++;
@@ -362,10 +353,10 @@ void	CAN2_RX0_IRQHandler(void)
 
 			if(RxMessage.StdId == 0x513)
 			{
-				circle_count_engineer(&temp_chassis_yaw,(U32)((int16_t)(RxMessage.Data[5]<<8|RxMessage.Data[4])+1800),3600,400);
-				engineer.chassis.YAW = (temp_chassis_yaw.angle+temp_chassis_yaw.circle*3600);
+				circle_count_engineer(&temp_chassis_yaw,(U32)(int16_t)(RxMessage.Data[5]<<8|RxMessage.Data[4]),3600,400);
+				engineer.chassis.YAW = (temp_chassis_yaw.angle+temp_chassis_yaw.circle * 3600);
 				
-				engineer_control.holder.position_C = (engineer.chassis.YAW - holder_init_position) * 8192 / 360;
+				engineer_control.holder.position_C = (engineer.chassis.YAW - holder_init_position) * 819 / 360;
 				if (!flag_holder)
 				{
 					if (engineer_control.holder.position_C != 0)
@@ -375,6 +366,7 @@ void	CAN2_RX0_IRQHandler(void)
 					}
 				}
 			}
+			
 //			//以下为云台电机反馈信号处理，根据不同机器人分别处理
 //			if(RxMessage.StdId == 0x205)
 //			{

@@ -22,17 +22,17 @@ void task_engineer_gas(void* param);				//Æø¶¯×°ÖÃ
 
 void task_engineer_control(void* param)
 {
-//	task_insert_CCM(task_engineer_chassis_control, NULL, 1);
+	task_insert_CCM(task_engineer_chassis_control, NULL, 1);
 //	task_insert_CCM(task_engineer_lift_control, NULL, 1);
-	task_insert_CCM(task_engineer_lift_x_control, NULL, 1);
+//	task_insert_CCM(task_engineer_lift_x_control, NULL, 1);
 //	task_insert_CCM(task_engineer_claw_control, NULL, 1);
 	task_insert_CCM(task_engineer_can1_send, NULL, 1);
 	task_insert_CCM(task_engineer_can2_send, NULL, 1);
-//	task_insert_CCM(task_engineer_relief_control,NULL,1);
+	task_insert_CCM(task_engineer_relief_control,NULL,1);
 //	task_insert_CCM(task_engineer_arm_control, NULL, 1);
 //	task_insert_CCM(task_engineer_arm_x_control, NULL, 1);
 //	task_insert_CCM(task_engineer_gas, NULL, 2);
-//	task_insert_CCM(task_engineer_holder_control,NULL,1);
+	task_insert_CCM(task_engineer_holder_control,NULL,1);
 	while(1)
 	{
 		task_delay_ms(100);
@@ -69,11 +69,12 @@ void task_engineer_can2_send(void* param)
   * @note   ÎŞ.
   * @retval ÎŞ.
   */
-#define   	GAIN_I		0.05f
-#define		GAIN_J		0.05f
-#define		GAIN_K		0.1f
+#define   	GAIN_I		0.5f
+#define		GAIN_J		0.5f
+#define		GAIN_K		0.9f
 void engineer_chassis_speed_T(float	vy,float vx,float vr)
 {    //Â·¾¶ĞŞÕı
+	float front_temp = vy,right_temp = vx;
 	if( /*vy!=0 &&*/ vr==0 && engineer.chassis.mode==follow)
 	{
 		if(engineer.chassis.is_direction_control==0)
@@ -81,17 +82,25 @@ void engineer_chassis_speed_T(float	vy,float vx,float vr)
 			 engineer_control.chassis.angle_T=engineer.chassis.YAW;
 		}
 		engineer.chassis.is_direction_control=1;
-//		vr=-PID_Update(&engineer_control.chassis.pid_direction_correct,engineer_control.chassis.angle_T,engineer.chassis.YAW);	
+		vr=-PID_Update(&engineer_control.chassis.pid_direction_correct,engineer_control.chassis.angle_T,engineer.chassis.YAW);	
 	}
 	else
 	{
 		engineer.chassis.is_direction_control=0;
 	}
 //	ËÙ¶È½âËã
-	engineer_control.chassis.position_T[0]	+= (+vx + vy + vr);
-	engineer_control.chassis.position_T[1]	+= (+vx - vy + vr);
-	engineer_control.chassis.position_T[2]	+= (-vx - vy + vr);
-	engineer_control.chassis.position_T[3]	+= (-vx + vy + vr);	  		
+	if(engineer_control.holder.holder_control_status == 1)
+	{
+			vy =  (int)(((float)front_temp) * (fast_cos((int16_t)Dir_angle))) 
+                        +(int)(((float)right_temp) * (fast_sin((int16_t)Dir_angle)));
+    
+      vx = -(int)(((float)front_temp) * (fast_sin((int16_t)Dir_angle))) 
+                       +(int)(((float)right_temp) * (fast_cos((int16_t)Dir_angle)));
+	}
+	engineer_control.chassis.position_T[0]	+= (+vx/GAIN_I + vy/GAIN_J + vr/GAIN_K);
+	engineer_control.chassis.position_T[1]	+= (+vx/GAIN_I - vy/GAIN_J + vr/GAIN_K);
+	engineer_control.chassis.position_T[2]	+= (-vx/GAIN_I - vy/GAIN_J + vr/GAIN_K);
+	engineer_control.chassis.position_T[3]	+= (-vx/GAIN_I + vy/GAIN_J + vr/GAIN_K);	  		
 }
 
 //void engineer_chassis_send_can(void)
@@ -413,36 +422,14 @@ void task_engineer_claw_control(void* param)//pid²ÎÊıÎ´Öª  		//Ò»¼¶Ì§Éı£¬ÓÒÒ¡¸ËÉ
 void out_arm(void)					//ÓÒ²¦¸Ë->ÖĞ
 {
 	engineer.bullet.temp_arm_angle += 70000;
-//	engineer.bullet.temp_arm_x_angle+=70000;
-//	unsigned long i = 14000000;
-//	air_pump_on(); 
-//	delay_us(750000);
-//	while(i--);
-	
-//	TIM_SetCompare1(TIM13,400);	//´ÎÄ©¶Ë¶æ»ú
 }
 
 void back_arm(void)				//ÓÒ²¦¸Ë->ÉÏ
 {
 	engineer.bullet.temp_arm_angle -= 70000;
-//	engineer.bullet.temp_arm_x_angle-=70000;
-	
-//	TIM_SetCompare1(TIM13,1150);
-//	delay_us(750000);
-//	unsigned long i = 90000000;
-//	while(i--);
-//	air_pump_off();
+
 }
 
-//void air_pump_on(void)
-//{
-//	GPIO_ResetBits(GPIOD, GPIO_Pin_6);
-//}
-
-//void air_pump_off(void)
-//{
-//	GPIO_SetBits(GPIOD, GPIO_Pin_6);
-//}
 
 /*************************¾ÈÔ®***************************/
 void task_engineer_relief_control(void* param)//¾ÈÔ® can2 £¬×ó²¦¸ËÖĞ->ÏÂ
@@ -460,9 +447,7 @@ void task_engineer_relief_control(void* param)//¾ÈÔ® can2 £¬×ó²¦¸ËÖĞ->ÏÂ
 //		LIMIT(engineer.relief.relief_frame,350000,0);
 		engineer_control.relief.position_T[0]=-engineer.relief.relief_frame;//×¥µ¯Ò²ÊÇÒ»ÕıÒ»¸ºµÄµç»ú×ªÏò
 		engineer_control.relief.position_T[1]=engineer.relief.relief_frame;
-		
-		if(engineer_control.relief.position_T[1]>5000)
-			engineer_control.relief.position_T[1]+=5000;
+	  
 		relief_p_count++;relief_v_count++;relief_i_count++;
 		if(relief_p_count % 5==0)//Î»ÖÃ»·5ms
 		{
@@ -511,15 +496,16 @@ void task_engineer_relief_control(void* param)//¾ÈÔ® can2 £¬×ó²¦¸ËÖĞ->ÏÂ
 	}
 }
 }
+
 /*************************ÔÆÌ¨***************************/
 float pp1,pi1,pd1,pp2,pi2,pd2;
 void task_engineer_holder_control(void *param) //CAN2,0x207
 {
 	static u8 holder_v_count = 0, holder_p_count = 0;
 
-	pid_init_absolute(&engineer_control.holder.pid_position, 0.245, 0.0008, 0.0021, 3000, 500); //7000
+	pid_init_absolute(&engineer_control.holder.pid_position, 0.001, 0, 0, 3000, 500); //7000
 
-	pid_init_increment(&engineer_control.holder.pid_speed, 7.25, 0.2, 0.0002 , 16000, 5000); //10000
+	pid_init_absolute(&engineer_control.holder.pid_speed, 11, 0.9, 2.35 , 10000, 5000); //10000
 
 	while (1)
 	{
@@ -530,16 +516,17 @@ void task_engineer_holder_control(void *param) //CAN2,0x207
 		//		LIMIT(engineer.bullet.holder,1120000,-540000);
 		holder_p_count++;
 		holder_v_count++;
-//		engineer_control.holder.position_T = engineer.bullet.holder;
+		engineer_control.holder.position_T = engineer.bullet.holder;
+//		engineer_control.holder.speed_T = engineer.bullet.holder;
 		if (holder_p_count % 4 == 0) //Î»ÖÃ»·4ms
 		{
 			holder_p_count = 0;
-			engineer_control.holder.speed_T = PID_Update(&engineer_control.holder.pid_position, engineer_control.holder.position_T, engineer_control.holder.position_C);
+//			engineer_control.holder.speed_T = PID_Update(&engineer_control.holder.pid_position, engineer_control.holder.position_T, engineer_control.holder.position_C);
 		}
 		if (holder_v_count % 2 == 0) //ËÙ¶È»·2ms
 		{
 			holder_v_count = 0;
-			engineer_control.holder.CAN_data = (int16_t)PID_IncrementMode(&engineer_control.holder.pid_speed, engineer_control.holder.speed_T, engineer_control.holder.speed_C);
+			engineer_control.holder.CAN_data = (int16_t)PID_Update(&engineer_control.holder.pid_speed, engineer_control.holder.speed_T, engineer_control.holder.speed_C);
 
 			if (holder_motors == 1)
 			{
@@ -645,11 +632,8 @@ void task_engineer_arm_x_control(void* param)//¶ş¼¶»úĞµ±Û can1 £¬×ó²¦¸ËÖĞ->ÏÂ
 	{
 		
 		LIMIT(engineer.bullet.arm_x_angle,72000,0);
-//		engineer_control.arm_x.position_T=-engineer.bullet.arm_x_angle;//×¥µ¯Ò²ÊÇÒ»ÕıÒ»¸ºµÄµç»ú×ªÏò
 		engineer_control.arm_x.position_T=engineer.bullet.arm_x_angle;
 		
-//		if(engineer_control.arm_x.position_T>5000)
-//			engineer_control.arm_x.position_T+=5000;
 		arm_x_p_count++;arm_x_v_count++;arm_x_i_count++;
 		if(arm_x_p_count % 5==0)//Î»ÖÃ»·5ms
 		{

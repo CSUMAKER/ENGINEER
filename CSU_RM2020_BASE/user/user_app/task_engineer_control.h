@@ -123,7 +123,7 @@ typedef struct
 typedef struct
 {
 	int angle_T;
-	
+	float yaw_angle;
 	S32 position_T;//目标位置
 	S32 position_C;//实际位置
 	
@@ -136,8 +136,9 @@ typedef struct
 	int16_t CAN_data;//CAN发送数据
 	
 	PID_Absolute_Type pid_position;//位置环
-	PID_Increment_Type pid_speed;//速度环
+	PID_Absolute_Type pid_speed;//速度环
 	PID_Increment_Type pid_current;//电流环
+	
 	
 	bool holder_control_status;
 }holder_control_t;

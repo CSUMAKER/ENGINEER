@@ -437,6 +437,11 @@
               <FileType>1</FileType>
               <FilePath>..\user\user_app\task_cancel_auto_collect.c</FilePath>
             </File>
+            <File>
+              <FileName>fast_tri_func.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\user\user_app\fast_tri_func.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

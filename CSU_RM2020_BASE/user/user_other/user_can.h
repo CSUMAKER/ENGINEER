@@ -16,6 +16,6 @@ typedef	struct	_mcircle_t
 
 extern mcircle_t	motor_circle[2][8];
 extern mcircle_t	can_mpu_yaw;	//标度转换后的hi216角度与圈数
-
+extern float Dir_angle;
 #endif
 

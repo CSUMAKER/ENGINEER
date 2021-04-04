@@ -51,7 +51,7 @@ void task_engineer_state(void* param)
 			case RP_S_MID:
 				engineer.remote_mode = handle;
 				engineer.chassis.mode = follow;
-				if (chassis_motors == 0)
+				if (lift_motors == 0)
 				{
 					chassis_motors = 1;
 					lift_motors = 1;
@@ -151,6 +151,7 @@ void lift_handle_mode(void)
 					//进一步测试再改正限幅，默认中间位置环为0
 		engineer.bullet.claw_angle += remote_origin.remote_JR_UD * 1;	//右摇杆爪子的旋转角（半自动
 		
+		
 		engineer.bullet.holder += remote_origin.remote_JL_LR * 0.1f;   
 //		engineer.bullet.arm_angle+=remote_origin.remote_JL_UD*0.1;	
 //					
@@ -223,20 +224,19 @@ void lift_handle_mode(void)
 			engineer.relief.relief_frame+=76800;
 		}
 
-//    if(remote_origin.remote_SR==RP_S_UP && f_last_sr==RP_S_MID)
-//		{
-//			if(engineer_control.holder.holder_control_status == 0)
-//			{
-//				engineer_control.holder.angle_T = engineer.chassis.YAW;
-//				engineer_control.holder.holder_control_status = 1;
-//			}
-//		}
+    if(remote_origin.remote_SR==RP_S_UP && f_last_sr==RP_S_MID)
+		{
+			if(engineer_control.holder.holder_control_status == 0)
+			{
+				engineer_control.holder.holder_control_status = 1;
+			}
+		}
 
-//		if(remote_origin.remote_SR==RP_S_MID && f_last_sr==RP_S_UP)
-//		{
-//        engineer_control.holder.holder_control_status = 0;
-//			  
-//		}
+		if(remote_origin.remote_SR==RP_S_MID && f_last_sr==RP_S_UP)
+		{
+        engineer_control.holder.holder_control_status = 0;
+			  
+		}
 
 		f_last_sr=remote_origin.remote_SR;
 		f_last_ll=remote_origin.remote_LL;
@@ -420,23 +420,22 @@ void lift_keybord_mode(void)											//遥控器的一键抓弹
 	
 	//此处应当添加撤销操作后的归零
 }
-	float i_TEST = 1;
 void task_print(void *param)
 {
 	float temp_send[8];
 
 	while(1)
 	{
-		temp_send[0]=(float)engineer_control.holder.position_C;
-		temp_send[1]=(float)engineer_control.holder.position_T;
-		temp_send[2]=(float)engineer_control.holder.speed_C;
-		temp_send[3]=(float)engineer_control.holder.speed_T;
+		temp_send[0]=engineer_control.holder.position_C;
+		temp_send[1]=engineer_control.holder.position_T;
+		temp_send[2]=engineer.chassis.YAW;
+		temp_send[3]=engineer_control.holder.yaw_angle;
 		temp_send[4]=(float)engineer_control.holder.speed_C;
 		temp_send[5]=(float)engineer_control.claw.speed_T[0];
 		temp_send[6]=(float)engineer_control.claw.current_C[0];
 		temp_send[7]=(float)engineer_control.claw.current_T[0];
 		
-		print_wave(1,4,&i_TEST);
+		print_wave(4,4,&temp_send[0],&temp_send[1],&temp_send[2],&temp_send[3],&temp_send[4],&temp_send[5],&temp_send[6],&temp_send[7]);
 		
 		task_delay_ms(10);
 	}
