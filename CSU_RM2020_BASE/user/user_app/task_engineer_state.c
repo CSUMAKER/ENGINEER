@@ -42,40 +42,42 @@ void task_engineer_state(void* param)
 			remote_origin.remote_SR=data->SR;
 			remote_origin.remote_SL=data->SL;
 			//判断控制模式————遥控器/键鼠
-			switch (data->SL)
+			switch(data->SL)
 			{
-			case RP_S_UP:
-				engineer.remote_mode = handle;
-				engineer.chassis.mode = catwalk;
-				break;
-			case RP_S_MID:
-				engineer.remote_mode = handle;
-				engineer.chassis.mode = follow;
-				if (chassis_motors == 0)
+				case RP_S_UP:
+					engineer.remote_mode=handle;
+					engineer.chassis.mode=catwalk;
+					break;
+				case RP_S_MID:
 				{
-					chassis_motors = 1;
-					lift_motors = 1;
-					lift_x_motors = 1;
-					claw_motors = 1;
-					relief_motors = 1;
-					holder_motors = 1;
-					arm_motors = 1;
-				}
-				break;
-			case RP_S_DOWN:
-				engineer.remote_mode = keyboard;
-				chassis_motors = 0;
-				lift_motors = 0;
-				lift_x_motors = 0;
-				claw_motors = 0;
-				relief_motors = 0;
-				holder_motors = 0;
-				arm_motors = 0;
-				break;
-			default:
-				engineer.remote_mode = handle;
-				engineer.chassis.mode = stop;
-				break;
+					engineer.remote_mode=handle;
+					engineer.chassis.mode=follow;
+				  if(lift_motors == 0)
+				  {
+				  chassis_motors = 1;
+				  lift_motors = 1;
+				  lift_x_motors = 1;
+				  claw_motors = 1;
+				  relief_motors = 1;
+				  holder_motors = 1;
+				  arm_motors = 1;
+				  }
+			  }
+					break;
+				case RP_S_DOWN:
+					engineer.remote_mode=keyboard;
+					chassis_motors = 0;
+				  lift_motors = 0;
+				  lift_x_motors = 0;
+				  claw_motors = 0;
+				  relief_motors = 0;
+				  holder_motors = 0;
+				  arm_motors = 0;
+					break;
+				default:
+					engineer.remote_mode=handle;
+					engineer.chassis.mode=stop;
+					break;
 			}
 			//针对不同控制模式分别进行目标值给定
 			//
@@ -108,7 +110,7 @@ void chassis_handle_mode(engineer_chassis_t* robot)
 			engineer.chassis.move_X_SPD=remote_origin.remote_JL_LR;
 			engineer.chassis.move_Y_SPD=remote_origin.remote_JL_UD;
 			engineer.chassis.move_Z_SPD=remote_origin.remote_JR_LR;
-			engineer.relief.relief_frame+=remote_origin.remote_JR_UD*1;
+			engineer.bullet.holder+=remote_origin.remote_JR_UD*1;
 			break;
 		case catwalk:
 			engineer.chassis.move_X_SPD=0;
@@ -125,7 +127,7 @@ void chassis_handle_mode(engineer_chassis_t* robot)
 			engineer.chassis.move_X_SPD=0;
 			engineer.chassis.move_Y_SPD=0;
 			engineer.chassis.move_Z_SPD=0;
-			engineer.relief.relief_frame=0;
+			
 			break;
 	}
 	engineer_chassis_speed_T(engineer.chassis.move_Y_SPD,engineer.chassis.move_X_SPD,engineer.chassis.move_Z_SPD);
@@ -142,31 +144,41 @@ void lift_handle_mode(void)
 	static S16 last_ll=0;
 	static u8 f_last_sr=4;
 	static S16 f_last_ll=0;
+	if(remote_origin.remote_LL>250)		//右开关由中间拨到上面控制爪子的抓取合放
+	{
+				TIM_SetCompare1(TIM4,9600);
+			TIM_SetCompare2(TIM4,9600);
+	}
+	else  
+	{
+			TIM_SetCompare1(TIM4,10350);	
+			TIM_SetCompare2(TIM4,10350);
+				
+	}
 	if(engineer.chassis.mode==catwalk)
 	{
 		//以下控制为位置环控制
-		engineer.bullet.lift_height += remote_origin.remote_JL_UD * 1;	//左摇杆上下控制抬升高度（半自动
+		engineer.bullet.lift_height+=remote_origin.remote_JL_UD*1;	//左摇杆上下控制抬升高度（半自动
 					//此处角度的最大值应该改成宏定义
-		engineer.bullet.lift_x_dis += remote_origin.remote_JR_LR * 1;	//抬升左右横移（半自动
-					//进一步测试再改正限幅，默认中间位置环为0
-		engineer.bullet.claw_angle += remote_origin.remote_JR_UD * 1;	//右摇杆爪子的旋转角（半自动
+		engineer.bullet.lift_x_dis+=remote_origin.remote_JR_LR*1;	//抬升左右横移（半自动
+//					//进一步测试再改正限幅，默认中间位置环为0
+		engineer.bullet.claw_angle+=remote_origin.remote_JR_UD*1;	//右摇杆爪子的旋转角（半自动
 		
-		engineer.bullet.holder += remote_origin.remote_JL_LR * 0.1f;   
 //		engineer.bullet.arm_angle+=remote_origin.remote_JL_UD*0.1;	
-//					
-//		engineer.bullet.arm_x_angle+=remote_origin.remote_JR_UD*0.1;	
+					
+//		engineer.bullet.arm_x_angle+=remote_origin.remote_JL_UD*0.5;	
 		
 		if(remote_origin.remote_SR==RP_S_DOWN&&last_sr==RP_S_MID)	//右开关由中间拨到下面控制机械臂DK
 		{
-			out_arm();
+			engineer.bullet.temp_arm_angle += 65800;
 		}
-
 		if(remote_origin.remote_SR==RP_S_MID&&last_sr==RP_S_DOWN)
 		{
-			back_arm();
+			engineer.bullet.temp_arm_angle -= 65800;
 		}
 		if(remote_origin.remote_SR==RP_S_UP&&last_sr==RP_S_MID)
 		{
+			
 			engineer.bullet.temp_arm_x_angle -= 30000;
 		}
 		if(remote_origin.remote_SR==RP_S_MID&&last_sr==RP_S_UP)
@@ -174,18 +186,8 @@ void lift_handle_mode(void)
 			engineer.bullet.temp_arm_x_angle += 30000;
 		}
 		
-		if(remote_origin.remote_LL<-250&&abs(last_ll)<50)		//右开关由中间拨到上面控制爪子的抓取合放
-		{
-				TIM_SetCompare1(TIM4,10000);	
-		}
-		else
-		{
-				TIM_SetCompare1(TIM4,10000);
-		}
-
+		
 		int s=40;
-
-
 		if(engineer.bullet.temp_arm_x_angle!=0&&engineer.bullet.temp_arm_x_angle>0)
 		{
 			engineer.bullet.arm_x_angle+=1.4*s;
@@ -207,40 +209,43 @@ void lift_handle_mode(void)
 			engineer.bullet.temp_arm_angle+=s;
 		}
 
+
 	last_sr=remote_origin.remote_SR;
 	last_ll=remote_origin.remote_LL;
 	}
 	if(engineer.chassis.mode==follow)
 	{
-//		engineer.relief.relief_frame+=remote_origin.remote_JR_UD*1;
-		if(remote_origin.remote_SR==RP_S_DOWN&&f_last_sr==RP_S_MID)	//右开关由中间拨到下面控制救援
-		{
-			engineer.relief.relief_frame-=76800;
-		}
 
-		if(remote_origin.remote_SR==RP_S_MID&&f_last_sr==RP_S_DOWN)
+//		engineer.relief.relief_frame+=remote_origin.remote_JR_UD*1;
+		
+//		if(remote_origin.remote_SR==RP_S_UP)
+//		{
+//			
+//			for(int i=0;i<4;i++)
+//			{
+//				engineer_control.chassis.position_T[i]+=600;
+//			}
+//			engineer.bullet.holder=-1900;
+//		}
+		
+		if(remote_origin.remote_SR==RP_S_MID&&f_last_sr==RP_S_UP)	//右开关由中间拨到下面控制救援
+		{
+//			engineer.bullet.holder+=8192-engineer.bullet.holder;
+		}
+		
+		if(remote_origin.remote_SR==RP_S_DOWN&&f_last_sr==RP_S_MID)	//右开关由中间拨到下面控制救援
 		{
 			engineer.relief.relief_frame+=76800;
 		}
-
-//    if(remote_origin.remote_SR==RP_S_UP && f_last_sr==RP_S_MID)
-//		{
-//			if(engineer_control.holder.holder_control_status == 0)
-//			{
-//				engineer_control.holder.angle_T = engineer.chassis.YAW;
-//				engineer_control.holder.holder_control_status = 1;
-//			}
-//		}
-
-//		if(remote_origin.remote_SR==RP_S_MID && f_last_sr==RP_S_UP)
-//		{
-//        engineer_control.holder.holder_control_status = 0;
-//			  
-//		}
-
+		
+		if(remote_origin.remote_SR==RP_S_MID&&f_last_sr==RP_S_DOWN)
+		{
+			engineer.relief.relief_frame-=76800;
+		}
 		f_last_sr=remote_origin.remote_SR;
 		f_last_ll=remote_origin.remote_LL;
 	}
+	
 }
 
 
@@ -420,23 +425,22 @@ void lift_keybord_mode(void)											//遥控器的一键抓弹
 	
 	//此处应当添加撤销操作后的归零
 }
-	float i_TEST = 1;
 void task_print(void *param)
 {
 	float temp_send[8];
-
+	
 	while(1)
 	{
-		temp_send[0]=(float)engineer_control.holder.position_C;
-		temp_send[1]=(float)engineer_control.holder.position_T;
-		temp_send[2]=(float)engineer_control.holder.speed_C;
-		temp_send[3]=(float)engineer_control.holder.speed_T;
-		temp_send[4]=(float)engineer_control.holder.speed_C;
-		temp_send[5]=(float)engineer_control.claw.speed_T[0];
-		temp_send[6]=(float)engineer_control.claw.current_C[0];
-		temp_send[7]=(float)engineer_control.claw.current_T[0];
+		temp_send[0]=engineer_control.claw.position_C[1];
+		temp_send[1]=engineer_control.claw.position_T[1];
+		temp_send[2]=engineer_control.claw.speed_C[0];
+		temp_send[3]=engineer_control.claw.speed_T[0];
+		temp_send[4]=engineer_control.claw.position_T[0];
+		temp_send[5]=engineer_control.claw.position_C[0];
+		temp_send[6]=engineer_control.holder.angle_T;
+		temp_send[7]=engineer_control.claw.current_T[0];
 		
-		print_wave(1,4,&i_TEST);
+		print_wave(8,4,&temp_send[0],&temp_send[1],&temp_send[2],&temp_send[3],&temp_send[4],&temp_send[5],&temp_send[6],&temp_send[7]);
 		
 		task_delay_ms(10);
 	}
