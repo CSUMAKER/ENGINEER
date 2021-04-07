@@ -179,6 +179,11 @@ typedef struct
 	
 }arm_x_control_t;
 
+typedef struct
+{
+	uint16_t ore_state;  //
+	
+}ore_control_t;
 
 typedef struct
 {
@@ -191,7 +196,7 @@ typedef struct
 	arm_control_t arm;					 //一级机械臂（两电机）
 	arm_x_control_t arm_x;       //二级机械臂（一电机）
 	gas_control_t gas;           //
-	
+	ore_control_t ore;           //一键取矿
 }engineer_control_t;
 extern engineer_control_t engineer_control;
 
