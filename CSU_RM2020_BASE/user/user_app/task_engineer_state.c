@@ -146,7 +146,7 @@ void lift_handle_mode(void)
 	static S16 f_last_ll=0;
 	if(remote_origin.remote_LL>250)		//右开关由中间拨到上面控制爪子的抓取合放
 	{
-				TIM_SetCompare1(TIM4,9600);
+			TIM_SetCompare1(TIM4,9600);
 			TIM_SetCompare2(TIM4,9600);
 	}
 	else  
@@ -168,47 +168,6 @@ void lift_handle_mode(void)
 					
 //		engineer.bullet.arm_x_angle+=remote_origin.remote_JL_UD*0.5;	
 		
-		if(remote_origin.remote_SR==RP_S_DOWN&&last_sr==RP_S_MID)	//右开关由中间拨到下面控制机械臂DK
-		{
-			engineer.bullet.temp_arm_angle += 65800;
-		}
-		if(remote_origin.remote_SR==RP_S_MID&&last_sr==RP_S_DOWN)
-		{
-			engineer.bullet.temp_arm_angle -= 65800;
-		}
-		if(remote_origin.remote_SR==RP_S_UP&&last_sr==RP_S_MID)
-		{
-			
-			engineer.bullet.temp_arm_x_angle -= 30000;
-		}
-		if(remote_origin.remote_SR==RP_S_MID&&last_sr==RP_S_UP)
-		{
-			engineer.bullet.temp_arm_x_angle += 30000;
-		}
-		
-		
-		int s=40;
-		if(engineer.bullet.temp_arm_x_angle!=0&&engineer.bullet.temp_arm_x_angle>0)
-		{
-			engineer.bullet.arm_x_angle+=1.4*s;
-			engineer.bullet.temp_arm_x_angle-=1.4*s;
-		}
-		if(engineer.bullet.temp_arm_x_angle!=0&&engineer.bullet.temp_arm_x_angle<0)
-		{
-			engineer.bullet.arm_x_angle-=1.4*s;
-			engineer.bullet.temp_arm_x_angle+=1.4*s;
-		}
-		if(engineer.bullet.temp_arm_angle!=0&&engineer.bullet.temp_arm_angle>0)
-		{
-			engineer.bullet.arm_angle+=s;
-			engineer.bullet.temp_arm_angle-=s;
-		}
-		if(engineer.bullet.temp_arm_angle!=0&&engineer.bullet.temp_arm_angle<0)
-		{
-			engineer.bullet.arm_angle-=s;
-			engineer.bullet.temp_arm_angle+=s;
-		}
-
 
 	last_sr=remote_origin.remote_SR;
 	last_ll=remote_origin.remote_LL;
@@ -398,7 +357,6 @@ void lift_keybord_mode(void)											//遥控器的一键抓弹
 				break;
 				
 			}
-
 			}
 		}
 		

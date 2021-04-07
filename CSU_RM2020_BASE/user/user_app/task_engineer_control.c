@@ -23,14 +23,14 @@ void task_engineer_gas(void* param);				//Æø¶¯×°ÖÃ
 void task_engineer_control(void* param)
 {
 	task_insert_CCM(task_engineer_chassis_control, NULL, 1);
-	task_insert_CCM(task_engineer_lift_control, NULL, 1);
-	task_insert_CCM(task_engineer_lift_x_control, NULL, 1);
-	task_insert_CCM(task_engineer_claw_control, NULL, 1);
+//	task_insert_CCM(task_engineer_lift_control, NULL, 1);
+//	task_insert_CCM(task_engineer_lift_x_control, NULL, 1);
+//	task_insert_CCM(task_engineer_claw_control, NULL, 1);
 	task_insert_CCM(task_engineer_can1_send, NULL, 1);
 	task_insert_CCM(task_engineer_can2_send, NULL, 1);
 //	task_insert_CCM(task_engineer_relief_control,NULL,1);
-	task_insert_CCM(task_engineer_arm_control, NULL, 1);
-	task_insert_CCM(task_engineer_arm_x_control, NULL, 1);
+//	task_insert_CCM(task_engineer_arm_control, NULL, 1);
+//	task_insert_CCM(task_engineer_arm_x_control, NULL, 1);
 //	task_insert_CCM(task_engineer_gas, NULL, 2);
 	 task_insert_CCM(task_engineer_holder_control,NULL,1);
 	while(1)
@@ -75,17 +75,15 @@ void task_engineer_can2_send(void* param)
 void engineer_chassis_speed_T(float	vy,float vx,float vr)
 {    //Â·¾¶ÐÞÕý
 	
-	
+	float	temp_vy, temp_vx;
 	if( /*vy!=0 &&*/ vr==0 && engineer.chassis.mode==follow/*&&remote_origin.remote_SR!=RP_S_UP*/)
 	{
 		if(engineer.chassis.is_direction_control==0)
 		{
-            engineer_control.chassis.angle_T=engineer.chassis.YAW;
-						
+      engineer_control.chassis.angle_T=engineer.chassis.YAW;		
 		}
+		
 		engineer.chassis.is_direction_control=1;
-		
-		
 		
 		if(engineer_control.chassis.angle_T-engineer.chassis.YAW<=5&&engineer_control.chassis.angle_T-engineer.chassis.YAW>=-5)
 		{
@@ -97,7 +95,7 @@ void engineer_chassis_speed_T(float	vy,float vx,float vr)
 		}
 		else if(engineer_control.chassis.angle_T-engineer.chassis.YAW<=-5)
 		{
-		vr=-PID_Update(&engineer_control.chassis.pid_direction_correct,engineer_control.chassis.angle_T,engineer.chassis.YAW-5);	
+			vr=-PID_Update(&engineer_control.chassis.pid_direction_correct,engineer_control.chassis.angle_T,engineer.chassis.YAW-5);	
 		}
 	}
 	else
@@ -107,27 +105,20 @@ void engineer_chassis_speed_T(float	vy,float vx,float vr)
 	
 		
 //	ËÙ¶È½âËã
-//	if(engineer.chassis.mode==follow&&remote_origin.remote_SR==RP_S_MID)
-//	{
-//	engineer_control.chassis.position_T[0]	+= (+vx/GAIN_I + vy/GAIN_J + vr/GAIN_K);
-//	engineer_control.chassis.position_T[1]	+= (+vx/GAIN_I - vy/GAIN_J + vr/GAIN_K);
-//	engineer_control.chassis.position_T[2]	+= (-vx/GAIN_I - vy/GAIN_J + vr/GAIN_K);
-//	engineer_control.chassis.position_T[3]	+= (-vx/GAIN_I +	vy/GAIN_J + vr/GAIN_K);
-//	}
-//	else if(engineer.chassis.mode==follow&&remote_origin.remote_SR==RP_S_UP)
-	{
+
+	
 		
-//		vy =  vy * (fast_cos((int16_t)engineer_control.holder.angle_T))
-//						+vx * (fast_sin((int16_t)engineer_control.holder.angle_T));
-//    
-//    vx = -vy * (fast_sin((int16_t)engineer_control.holder.angle_T)) 
-//						+vx * (fast_cos((int16_t)engineer_control.holder.angle_T));
-		engineer_control.chassis.position_T[0]	+= (+vx/GAIN_I + vy/GAIN_J + vr/GAIN_K);
-		engineer_control.chassis.position_T[1]	+= (+vx/GAIN_I - vy/GAIN_J + vr/GAIN_K);
-		engineer_control.chassis.position_T[2]	+= (-vx/GAIN_I - vy/GAIN_J + vr/GAIN_K);
-		engineer_control.chassis.position_T[3]	+= (-vx/GAIN_I +	vy/GAIN_J + vr/GAIN_K);
+		temp_vy =  vy * (fast_cos((int16_t)engineer_control.holder.angle_T))
+						+vx * (fast_sin((int16_t)engineer_control.holder.angle_T));
+    
+    temp_vx = -vy * (fast_sin((int16_t)engineer_control.holder.angle_T)) 
+						+vx * (fast_cos((int16_t)engineer_control.holder.angle_T));
+		engineer_control.chassis.position_T[0]	+= (+temp_vx/GAIN_I + temp_vy/GAIN_J + vr/GAIN_K);
+		engineer_control.chassis.position_T[1]	+= (+temp_vx/GAIN_I - temp_vy/GAIN_J + vr/GAIN_K);
+		engineer_control.chassis.position_T[2]	+= (-temp_vx/GAIN_I - temp_vy/GAIN_J + vr/GAIN_K);
+		engineer_control.chassis.position_T[3]	+= (-temp_vx/GAIN_I +	temp_vy/GAIN_J + vr/GAIN_K);
 		
-	}
+	
 }
 
 
@@ -363,63 +354,61 @@ void task_engineer_claw_control(void* param)//pid²ÎÊýÎ´Öª  		//Ò»¼¶Ì§Éý£¬ÓÒÒ¡¸ËÉ
 	
 	for(i=0;i<2;i++)
 	{
-//		pid_init_absolute(&engineer_control.claw.pid_position[i] , 0.8 , 0 , 0.003 , 5000 ,0);//p=0.7,i=0,d=0
-//		pid_init_absolute(&engineer_control.claw.pid_speed[i] , 10, 0.02 , 0.006 , 10000 ,0);//p=15,i=0.01,d=25
 		pid_init_absolute(&engineer_control.claw.pid_position[i] , 0.64 , 0.001 , 0.22 , 3000 ,500);//²ÎÊýÐèÒªÖØµ÷Íê³É
 		pid_init_absolute(&engineer_control.claw.pid_speed[i]    ,   7.25 , 0.2 , 3.125  , 4000 ,500);	
 		pid_init_increment(&engineer_control.claw.pid_current[i] , 1.2 , 0.15 , 0.5 , 10000 , 10000 );
 	}
 	
+	
+	while(1)
 	{
-		while(1)
+		LIMIT(engineer.bullet.claw_angle,255000,0);   							//´Ë´¦ÐÞ¸ÄÁËÏÞ·ù£¬65000->0
+		engineer_control.claw.position_T[0]=engineer.bullet.claw_angle;
+		engineer_control.claw.position_T[1]=-engineer.bullet.claw_angle;
+		claw_p_count++;claw_v_count++;
+		if(claw_p_count % 5==0)//Î»ÖÃ»·5ms
 		{
-			LIMIT(engineer.bullet.claw_angle,255000,0);   							//´Ë´¦ÐÞ¸ÄÁËÏÞ·ù£¬65000->0
-			engineer_control.claw.position_T[0]=engineer.bullet.claw_angle;
-			engineer_control.claw.position_T[1]=-engineer.bullet.claw_angle;
-			claw_p_count++;claw_v_count++;
-			if(claw_p_count % 5==0)//Î»ÖÃ»·5ms
+			claw_p_count = 0;
+			for(i=0;i<2;i++)
 			{
-				claw_p_count = 0;
-				for(i=0;i<2;i++)
-				{
-					engineer_control.claw.speed_T[i] = PID_Update(&engineer_control.claw.pid_position[i],engineer_control.claw.position_T[i],engineer_control.claw.position_C[i]);
-				}
+				engineer_control.claw.speed_T[i] = PID_Update(&engineer_control.claw.pid_position[i],engineer_control.claw.position_T[i],engineer_control.claw.position_C[i]);
 			}
-			if(claw_v_count % 2==0)//ËÙ¶È»·2ms
-			{
-				claw_v_count = 0;
-				for(i=0;i<2;i++)
-				{
-					engineer_control.claw.current_T[i] = (int16_t)PID_Update(&engineer_control.claw.pid_speed[i],engineer_control.claw.speed_T[i],engineer_control.claw.speed_C[i]);	
-				}
-			}
-			if(claw_i_count % 2==0)//µçÁ÷»·2ms
-			{
-				claw_i_count = 0;
-				for(i=0;i<2;i++)
-				{
-					engineer_control.claw.CAN_data[i] = (int16_t)PID_IncrementMode(&engineer_control.claw.pid_current[i],engineer_control.claw.current_T[i],engineer_control.claw.current_C[i]);	
-				}
-				//¸³Öµ¸øcanÏûÏ¢
-				if (claw_motors==1)
-				{
-					can1_send_data_1[6]=engineer_control.claw.CAN_data[0]>>8;
-					can1_send_data_1[7]=engineer_control.claw.CAN_data[0]&0xff;
-					
-					can1_send_data_2[0]=-engineer_control.claw.CAN_data[0]>>8;
-					can1_send_data_2[1]=-engineer_control.claw.CAN_data[0]&0xff;
-				}
-				else
-				{
-					can1_send_data_1[6]=0;
-					can1_send_data_1[7]=0;
-					can1_send_data_2[0]=0;
-					can1_send_data_2[1]=0;
-				}
-			}
-			task_delay_ms(1);
 		}
+		if(claw_v_count % 2==0)//ËÙ¶È»·2ms
+		{
+			claw_v_count = 0;
+			for(i=0;i<2;i++)
+			{
+				engineer_control.claw.current_T[i] = (int16_t)PID_Update(&engineer_control.claw.pid_speed[i],engineer_control.claw.speed_T[i],engineer_control.claw.speed_C[i]);	
+			}
+		}
+		if(claw_i_count % 2==0)//µçÁ÷»·2ms
+		{
+			claw_i_count = 0;
+			for(i=0;i<2;i++)
+			{
+				engineer_control.claw.CAN_data[i] = (int16_t)PID_IncrementMode(&engineer_control.claw.pid_current[i],engineer_control.claw.current_T[i],engineer_control.claw.current_C[i]);	
+			}
+			//¸³Öµ¸øcanÏûÏ¢
+			if (claw_motors==1)
+			{
+				can1_send_data_1[6]=engineer_control.claw.CAN_data[0]>>8;
+				can1_send_data_1[7]=engineer_control.claw.CAN_data[0]&0xff;
+				
+				can1_send_data_2[0]=-engineer_control.claw.CAN_data[0]>>8;
+				can1_send_data_2[1]=-engineer_control.claw.CAN_data[0]&0xff;
+			}
+			else
+			{
+				can1_send_data_1[6]=0;
+				can1_send_data_1[7]=0;
+				can1_send_data_2[0]=0;
+				can1_send_data_2[1]=0;
+			}
+		}
+		task_delay_ms(1);
 	}
+
 }
 
 /********************×¥È¡µ¯Ò©*********************/
@@ -427,24 +416,13 @@ void out_arm(void)					//ÓÒ²¦¸Ë->ÖÐ
 {
 	engineer.bullet.temp_arm_angle+=80000;
 	engineer.bullet.temp_arm_x_angle+=70000;
-//	unsigned long i = 14000000;
-//	air_pump_on(); 
-//	delay_us(750000);
-//	while(i--);
-	
-//	TIM_SetCompare1(TIM13,400);	//´ÎÄ©¶Ë¶æ»ú
+
 }
 
 void back_arm(void)				//ÓÒ²¦¸Ë->ÉÏ
 {
 	engineer.bullet.temp_arm_angle-=80000;
 	engineer.bullet.temp_arm_x_angle-=70000;
-	
-//	TIM_SetCompare1(TIM13,1150);
-//	delay_us(750000);
-//	unsigned long i = 90000000;
-//	while(i--);
-//	air_pump_off();
 }
 
 //void air_pump_on(void)
@@ -532,8 +510,7 @@ void task_engineer_holder_control(void* param)        //CAN2,0x207
 	pid_init_absolute(&engineer_control.holder.pid_position , 0.0540 , 0.002 , 0.022 , 5500 ,500);//7000
 	
 	pid_init_absolute(&engineer_control.holder.pid_speed , 11 , 0.9 , 2.35 , 10000 ,5000);//10000
-//	
-//	pid_init_increment(&engineer_control.holder.pid_current , 1.0 , 0.8 , 0.001  , 10000 ,5000);
+
 
 	while(1)
 	{ 
@@ -550,13 +527,7 @@ void task_engineer_holder_control(void* param)        //CAN2,0x207
 		{
 			holder_v_count = 0;
 			engineer_control.holder.CAN_data = (int16_t)PID_Update(&engineer_control.holder.pid_speed,engineer_control.holder.speed_T,engineer_control.holder.speed_C);
-		}
 		
-		if(holder_i_count % 2==0)//ËÙ¶È»·2ms
-		{
-			holder_i_count = 0;
-//			engineer_control.holder.CAN_data = (int16_t)PID_IncrementMode(&engineer_control.holder.pid_current,engineer_control.holder.current_T,engineer_control.holder.current_C);	
-			
 			if(holder_motors ==1)
 			{
 				//¸³Öµ¸øcanÏûÏ¢
@@ -688,90 +659,6 @@ void task_engineer_arm_x_control(void* param)//¶þ¼¶»úÐµ±Û can1 £¬×ó²¦¸ËÖÐ->ÏÂ
 	}
 }
 }
-
-/********************Æø¶¯×°ÖÃ*********************/
-//void engineer_popup_claw(void)
-//{
-//	GPIO_SetBits(GPIOD, GPIO_Pin_3);
-//}
-//void engineer_back_claw(void)
-//{
-//	GPIO_ResetBits(GPIOD, GPIO_Pin_3);
-//}
-//void engineer_popup_supply(void)
-//{
-//	GPIO_SetBits(GPIOD, GPIO_Pin_5);
-//}
-//void engineer_back_supply(void)
-//{
-//	GPIO_ResetBits(GPIOD, GPIO_Pin_5);
-//}
-//void engineer_popup_relief(void)
-//{
-//	GPIO_SetBits(GPIOD, GPIO_Pin_4);
-//}
-//void engineer_back_relief(void)
-//{
-//	GPIO_ResetBits(GPIOD, GPIO_Pin_4);
-//}
-//void engineer_clamp_claw(void)
-//{
-//	GPIO_SetBits(GPIOD, GPIO_Pin_6);
-//}
-//void engineer_loose_claw(void)
-//{
-//	GPIO_ResetBits(GPIOD, GPIO_Pin_6);
-//}
-
-//void task_engineer_gas(void* param)
-//{
-//	GPIO_InitTypeDef GPIO_InitStructure;
-
-//	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOD, ENABLE);
-
-//    GPIO_InitStructure.GPIO_Pin	= GPIO_Pin_3 | GPIO_Pin_4 |GPIO_Pin_5 | GPIO_Pin_6 ;
-//    GPIO_InitStructure.GPIO_Mode	= GPIO_Mode_OUT;
-//    GPIO_InitStructure.GPIO_OType	= GPIO_OType_PP;
-//    GPIO_InitStructure.GPIO_Speed	= GPIO_Speed_100MHz;
-//    GPIO_InitStructure.GPIO_PuPd	= GPIO_PuPd_DOWN;
-//    GPIO_Init(GPIOD, &GPIO_InitStructure);
-
-//    GPIO_ResetBits(GPIOD, GPIO_Pin_3);
-//    GPIO_ResetBits(GPIOD, GPIO_Pin_4);
-//    GPIO_ResetBits(GPIOD, GPIO_Pin_5);
-//	GPIO_ResetBits(GPIOD, GPIO_Pin_6);
-//	
-//	engineer_control.gas.clamp_claw=engineer_clamp_claw;
-//	engineer_control.gas.loose_calw=engineer_loose_claw;
-//	engineer_control.gas.popup_claw=engineer_popup_claw;
-//	engineer_control.gas.back_calw=engineer_back_claw;
-//	engineer_control.gas.popup_supply=engineer_popup_supply;
-//	engineer_control.gas.back_supply=engineer_back_supply;
-//	engineer_control.gas.popup_relief=engineer_popup_relief;
-//	engineer_control.gas.back_relief=engineer_back_relief;
-
-//    while(1)
-//    {
-//		if(engineer.relief.relief_finger)
-//			{
-//				engineer_control.gas.popup_relief();
-//			}
-//			else
-//			{
-//				engineer_control.gas.back_relief();
-//			}
-//			
-//		if(engineer.bullet.lift_Y_stick)
-//			{
-//				engineer_control.gas.popup_claw();
-//			}
-//			else
-//			{
-//				engineer_control.gas.back_calw();
-//			}
-//        task_delay_ms(5);
-//    }
-//}
 
 
 /* variables -----------------------------------------------------------------*/
