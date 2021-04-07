@@ -1,4 +1,11 @@
-Load "d:\\code\\C_CPP_file\\RM2021_engineer - 2021.3.29\\CSU_RM2020_BASE\\keilproject_stm32f4\\Objects\\RM2020.axf" 
-RDDI-DAP Error
-Error: Flash Download failed  -  Target DLL has been cancelled
-Flash Load finished at 00:43:06
+*** Using Compiler 'V5.06 update 6 (build 750)', folder: 'D:\software\keil_v5\ARM\ARMCC\Bin'
+Build target 'RM2020'
+compiling task_engineer_state.c...
+..\user\user_app\task_engineer_state.c(243): warning:  #550-D: variable "f_last_ll"  was set but never used
+  	static S16 f_last_ll=0;
+..\user\user_app\task_engineer_state.c: 1 warning, 0 errors
+linking...
+Program Size: Code=51402 RO-data=3978 RW-data=4532 ZI-data=1164460  
+FromELF: creating hex file...
+".\Objects\RM2020.axf" - 0 Error(s), 1 Warning(s).
+Build Time Elapsed:  00:00:02

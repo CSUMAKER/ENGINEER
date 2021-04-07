@@ -12,6 +12,8 @@
 
 engineer_state_t engineer;		//工程车目标值
 engineer_remote_t remote_origin;//暂存遥控器数据
+static uint16_t last_keybrod[8] = {0};
+int16_t front_temp,right_temp;
 								//添加堵转保护任务（建立控制变量）
 void task_print(void *param);
 void chassis_keybord_mode(engineer_chassis_t* robot);
@@ -52,14 +54,14 @@ void task_engineer_state(void* param)
 				engineer.remote_mode = handle;
 				engineer.chassis.mode = follow;
 				if (lift_motors == 0)
-				{
-					chassis_motors = 1;
-					lift_motors = 1;
-					lift_x_motors = 1;
-					claw_motors = 1;
-					relief_motors = 1;
-					holder_motors = 1;
-					arm_motors = 1;
+				{           
+					chassis_motors = 1;           
+					lift_motors = 1;           
+					lift_x_motors = 1;           
+					claw_motors = 1;           
+					relief_motors = 1;           
+					holder_motors = 1;           
+					arm_motors = 1;           
 				}
 				break;
 			case RP_S_DOWN:
@@ -131,9 +133,105 @@ void chassis_handle_mode(engineer_chassis_t* robot)
 	engineer_chassis_speed_T(engineer.chassis.move_Y_SPD,engineer.chassis.move_X_SPD,engineer.chassis.move_Z_SPD);
 }
 
-void chassis_keybord_mode(engineer_chassis_t* robot)
+void chassis_keybord_mode(engineer_chassis_t *robot)
 {
-	
+	static int16_t speedcount = 0;
+
+	switch (speedcount)
+	{
+	case 0:
+		engineer.chassis.move_Y_SPD = 300 * remote_origin.KeyBoard.w - 300 * remote_origin.KeyBoard.s;
+		engineer.chassis.move_X_SPD = 300 * remote_origin.KeyBoard.d - 300 * remote_origin.KeyBoard.a;
+		engineer.chassis.move_Z_SPD = 300 * remote_origin.KeyBoard.q - 300 * remote_origin.KeyBoard.e;
+		last_keybrod[0] = remote_origin.KeyBoard.w;
+		last_keybrod[0] = remote_origin.KeyBoard.s;
+		last_keybrod[2] = remote_origin.KeyBoard.d;
+		last_keybrod[3] = remote_origin.KeyBoard.a;
+		last_keybrod[4] = remote_origin.KeyBoard.q;
+		last_keybrod[5] = remote_origin.KeyBoard.e;
+		speedcount++;
+		break;
+
+	case 1:
+		if ((last_keybrod[0] == remote_origin.KeyBoard.w) && (last_keybrod[1] == remote_origin.KeyBoard.s) && (last_keybrod[2] == remote_origin.KeyBoard.d) && (last_keybrod[3] == remote_origin.KeyBoard.a) && (last_keybrod[4] == remote_origin.KeyBoard.q) && (last_keybrod[5] == remote_origin.KeyBoard.e))
+		{
+			speedcount++;
+		}
+		else
+		{
+			engineer.chassis.move_Y_SPD = 300 * remote_origin.KeyBoard.w - 300 * remote_origin.KeyBoard.s;
+			engineer.chassis.move_X_SPD = 300 * remote_origin.KeyBoard.d - 300 * remote_origin.KeyBoard.a;
+			engineer.chassis.move_Z_SPD = 300 * remote_origin.KeyBoard.q - 300 * remote_origin.KeyBoard.e;
+			speedcount = 0;
+		}
+		break;
+
+	case 2:
+		if ((remote_origin.KeyBoard.w == 1) || (remote_origin.KeyBoard.s == 1) || (remote_origin.KeyBoard.a == 1) || (remote_origin.KeyBoard.d == 1) || (remote_origin.KeyBoard.q == 1) || (remote_origin.KeyBoard.e == 1))
+		{
+			if ((remote_origin.KeyBoard.w == 0) && (remote_origin.KeyBoard.s == 1))
+			{
+				front_temp = engineer.chassis.move_Y_SPD;
+				engineer.chassis.move_Y_SPD = front_temp - 1 * (remote_origin.KeyBoard.shift - remote_origin.KeyBoard.ctrl);
+				if (engineer.chassis.move_Y_SPD > 0)
+				{
+					engineer.chassis.move_Y_SPD = 0;
+				}
+			}
+			else if (remote_origin.KeyBoard.w == 1)
+			{
+				front_temp = engineer.chassis.move_Y_SPD;
+				engineer.chassis.move_Y_SPD = front_temp + 1 * (remote_origin.KeyBoard.shift - remote_origin.KeyBoard.ctrl);
+				if (engineer.chassis.move_Y_SPD < 0)
+				{
+					engineer.chassis.move_Y_SPD = 0;
+				}
+			}
+			if ((remote_origin.KeyBoard.d == 0) && (remote_origin.KeyBoard.a == 1))
+			{
+				right_temp = engineer.chassis.move_X_SPD;
+				engineer.chassis.move_X_SPD = right_temp - 1 * (remote_origin.KeyBoard.shift - remote_origin.KeyBoard.ctrl);
+				if (engineer.chassis.move_X_SPD > 0)
+				{
+					engineer.chassis.move_X_SPD = 0;
+				}
+			}
+			else if (remote_origin.KeyBoard.d == 1)
+			{
+				right_temp = engineer.chassis.move_X_SPD;
+				engineer.chassis.move_X_SPD = right_temp + 1 * (remote_origin.KeyBoard.shift - remote_origin.KeyBoard.ctrl);
+				if (engineer.chassis.move_X_SPD < 0)
+				{
+					engineer.chassis.move_X_SPD = 0;
+				}
+			}
+			if ((remote_origin.KeyBoard.q == 0) && (remote_origin.KeyBoard.e == 1))
+			{
+				engineer.chassis.move_Z_SPD -= 1 * (remote_origin.KeyBoard.shift - remote_origin.KeyBoard.ctrl);
+				if (engineer.chassis.move_Z_SPD > 0)
+				{
+					engineer.chassis.move_Z_SPD = 0;
+				}
+			}
+			else if (remote_origin.KeyBoard.q == 1)
+			{
+				engineer.chassis.move_Z_SPD += 1 * (remote_origin.KeyBoard.shift - remote_origin.KeyBoard.ctrl);
+				if (engineer.chassis.move_Z_SPD < 0)
+				{
+					engineer.chassis.move_Z_SPD = 0;
+				}
+			}
+			speedcount = 1;
+		}
+		else
+		{
+			speedcount = 0;
+		}
+		break;
+	}
+	engineer.chassis.move_X_SPD = RPC_ZERO((engineer.chassis.move_X_SPD - 1024), 10);
+	engineer.chassis.move_Y_SPD = RPC_ZERO((engineer.chassis.move_Y_SPD - 1024), 10);
+	engineer.chassis.move_Z_SPD = RPC_ZERO((engineer.chassis.move_Z_SPD - 1024), 10);
 }
 
 void lift_handle_mode(void)
@@ -152,7 +250,7 @@ void lift_handle_mode(void)
 		engineer.bullet.claw_angle += remote_origin.remote_JR_UD * 1;	//右摇杆爪子的旋转角（半自动
 		
 		
-		engineer.bullet.holder += remote_origin.remote_JL_LR * 0.1f;   
+		engineer.bullet.holder += remote_origin.remote_JL_LR * 0.05f;   
 //		engineer.bullet.arm_angle+=remote_origin.remote_JL_UD*0.1;	
 //					
 //		engineer.bullet.arm_x_angle+=remote_origin.remote_JR_UD*0.1;	
@@ -226,10 +324,9 @@ void lift_handle_mode(void)
 
     if(remote_origin.remote_SR==RP_S_UP && f_last_sr==RP_S_MID)
 		{
-			if(engineer_control.holder.holder_control_status == 0)
-			{
+
 				engineer_control.holder.holder_control_status = 1;
-			}
+
 		}
 
 		if(remote_origin.remote_SR==RP_S_MID && f_last_sr==RP_S_UP)
@@ -430,12 +527,12 @@ void task_print(void *param)
 		temp_send[1]=engineer_control.holder.position_T;
 		temp_send[2]=engineer.chassis.YAW;
 		temp_send[3]=engineer_control.holder.yaw_angle;
-		temp_send[4]=(float)engineer_control.holder.speed_C;
-		temp_send[5]=(float)engineer_control.claw.speed_T[0];
-		temp_send[6]=(float)engineer_control.claw.current_C[0];
-		temp_send[7]=(float)engineer_control.claw.current_T[0];
+		temp_send[4]=engineer.bullet.holder;
+		temp_send[5]=engineer_control.holder.speed_C;
+		temp_send[6]=engineer_control.holder.speed_T;
+		temp_send[7]=Dir_angle;
 		
-		print_wave(4,4,&temp_send[0],&temp_send[1],&temp_send[2],&temp_send[3],&temp_send[4],&temp_send[5],&temp_send[6],&temp_send[7]);
+		print_wave(8,4,&temp_send[0],&temp_send[1],&temp_send[2],&temp_send[3],&temp_send[4],&temp_send[5],&temp_send[6],&temp_send[7]);
 		
 		task_delay_ms(10);
 	}

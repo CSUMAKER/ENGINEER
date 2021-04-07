@@ -28,7 +28,7 @@ void task_engineer_control(void* param)
 //	task_insert_CCM(task_engineer_claw_control, NULL, 1);
 	task_insert_CCM(task_engineer_can1_send, NULL, 1);
 	task_insert_CCM(task_engineer_can2_send, NULL, 1);
-	task_insert_CCM(task_engineer_relief_control,NULL,1);
+//	task_insert_CCM(task_engineer_relief_control,NULL,1);
 //	task_insert_CCM(task_engineer_arm_control, NULL, 1);
 //	task_insert_CCM(task_engineer_arm_x_control, NULL, 1);
 //	task_insert_CCM(task_engineer_gas, NULL, 2);
@@ -81,8 +81,8 @@ void engineer_chassis_speed_T(float	vy,float vx,float vr)
 		{
 			 engineer_control.chassis.angle_T=engineer.chassis.YAW;
 		}
-		engineer.chassis.is_direction_control=1;
-		vr=-PID_Update(&engineer_control.chassis.pid_direction_correct,engineer_control.chassis.angle_T,engineer.chassis.YAW);	
+		   engineer.chassis.is_direction_control=1;
+//		vr=-PID_Update(&engineer_control.chassis.pid_direction_correct,engineer_control.chassis.angle_T,engineer.chassis.YAW);	
 	}
 	else
 	{
@@ -160,7 +160,6 @@ void chassis_pid_control(void)
 			pid_zero_absolute(&engineer_control.chassis.pid_speed[i]);
 			pid_zero_increment(&engineer_control.chassis.pid_current[i]);
 		}
-//		engineer_chassis_send_can();
 		for(i = 0; i <4;i++)
 		{
 			can2_send_data_1[2*i] = 0;
@@ -498,20 +497,19 @@ void task_engineer_relief_control(void* param)//救援 can2 ，左拨杆中->下
 }
 
 /*************************云台***************************/
-float pp1,pi1,pd1,pp2,pi2,pd2;
+float pp1 = 1.5,pi1 = 0,pd1=0,pp2 =12,pi2=0.9,pd2=2;
 void task_engineer_holder_control(void *param) //CAN2,0x207
 {
 	static u8 holder_v_count = 0, holder_p_count = 0;
 
-	pid_init_absolute(&engineer_control.holder.pid_position, 0.001, 0, 0, 3000, 500); //7000
+	pid_init_absolute(&engineer_control.holder.pid_position, 1.5, 0, 0, 3000, 500); //7000
 
-	pid_init_absolute(&engineer_control.holder.pid_speed, 11, 0.9, 2.35 , 10000, 5000); //10000
+	pid_init_absolute(&engineer_control.holder.pid_speed, 12, 0.9, 2 , 10000, 5000); //1000011, 0.9, 2.31
 
 	while (1)
 	{
 //		pid_init_absolute(&engineer_control.holder.pid_position, pp1, pi1, pd1, 3500, 500); //7000、5.5，1，0.25
-
-//	  pid_init_increment(&engineer_control.holder.pid_speed, pp2, pi2, pd2 , 16000, 5000); //10000，0.6，0，0
+//	  pid_init_absolute(&engineer_control.holder.pid_speed, pp2, pi2, pd2 , 16000, 5000); //10000，0.6，0，0
 		
 		//		LIMIT(engineer.bullet.holder,1120000,-540000);
 		holder_p_count++;
@@ -521,7 +519,7 @@ void task_engineer_holder_control(void *param) //CAN2,0x207
 		if (holder_p_count % 4 == 0) //位置环4ms
 		{
 			holder_p_count = 0;
-//			engineer_control.holder.speed_T = PID_Update(&engineer_control.holder.pid_position, engineer_control.holder.position_T, engineer_control.holder.position_C);
+			engineer_control.holder.speed_T = PID_Update(&engineer_control.holder.pid_position, engineer_control.holder.position_T, engineer_control.holder.position_C);
 		}
 		if (holder_v_count % 2 == 0) //速度环2ms
 		{
