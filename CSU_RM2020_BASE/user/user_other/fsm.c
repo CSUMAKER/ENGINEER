@@ -18,7 +18,7 @@ enum year_event{
 /*
 FsmTable_t test_table[] =
 {
-    //{到来的事件，当前的状态，将要要执行的函数，下一个状态}
+    //{鍒版潵鐨勪簨浠讹紝褰撳墠鐨勭姸鎬侊紝灏嗚瑕佹墽琛岀殑鍑芥暟锛屼笅涓�涓姸鎬亇
     { EVENT1,  SPRING,    summer_thing,  SUMMER },
     { EVENT2,  SUMMER,    autumn_thing,  AUTUMN },
     { EVENT3,  AUTUMN,    winter_thing,  WINTER },

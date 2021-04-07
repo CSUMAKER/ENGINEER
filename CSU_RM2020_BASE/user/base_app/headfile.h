@@ -44,7 +44,7 @@
 #include "task_Ano.h"
 #include "mak_filter.h"
 #include "UI_lib.h"
-
+#include "fast_tri_func.h"
 //****ST_lib****
 #include "string.h"
 #include "stdlib.h"
