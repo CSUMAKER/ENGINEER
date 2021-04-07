@@ -8,8 +8,8 @@
 /***********三选一，否则会崩*******/
 
 //#define MAIN_CONTROL_2019
-#define MAIN_CONTROL_2020solider
-//#define MAIN_CONTROL_2020sentry
+//#define MAIN_CONTROL_2020solider
+#define MAIN_CONTROL_2020sentry
 
 /*********************************/
 

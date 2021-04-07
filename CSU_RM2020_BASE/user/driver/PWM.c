@@ -44,7 +44,7 @@ void PWM_init()
 	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;        //上拉
 	GPIO_Init(GPIOD,&GPIO_InitStructure);              //初始化PA7
 	  
-	TIM_TimeBaseStructure.TIM_Prescaler=84-1;  //定时器分频
+	TIM_TimeBaseStructure.TIM_Prescaler=16-1;  //定时器分频
 	TIM_TimeBaseStructure.TIM_CounterMode=TIM_CounterMode_Up; //向上计数模式
 	TIM_TimeBaseStructure.TIM_Period=20000;   //自动重装载值
 	TIM_TimeBaseStructure.TIM_ClockDivision=TIM_CKD_DIV1; 
@@ -66,8 +66,8 @@ void PWM_init()
 	TIM_Cmd(TIM4, ENABLE);  //使能TIM14
 
 
-	TIM4->CCR1 = 9000;
-	TIM4->CCR2  = 9000;
+	TIM4->CCR1 = 10350;
+	TIM4->CCR2  = 10350;
     task_delay_ms(200);
 
 }

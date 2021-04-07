@@ -185,7 +185,6 @@ void usart2_send_string(u8 *buff, u32 len)
         buff++;
     }
 }
-
 #define CMD_WARE     3
 /**************
 函数功能：向山外上位机输出1到8个通道的波形
