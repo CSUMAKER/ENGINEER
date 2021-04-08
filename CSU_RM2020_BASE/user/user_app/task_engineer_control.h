@@ -208,10 +208,3 @@ void out_arm(void);
 void task_engineer_control(void* param);
 
 #endif
-
-#ifndef _FAST_TRI_FUNC
-#define _FAST_TRI_FUNC
-#include <stdint.h>
-float fast_cos(int16_t angle);
-float fast_sin(int16_t angle);
-#endif

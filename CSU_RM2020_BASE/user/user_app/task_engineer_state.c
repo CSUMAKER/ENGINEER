@@ -5,403 +5,386 @@
 #include "task_motor_protect.h"
 #include "task_cancel_auto_collect.h"
 
-//´«¸ĞÆ÷±äÁ¿
-//engineer.sensors.laser_switch_left	//×ó¼¤¹â
-//engineer.sensors.laser_switch_right	//ÓÒ¼¤¹â
-//catch_ultrasound						//ÖĞ¼ä³¬Éù²¨
+//ä¼ æ„Ÿå™¨å˜é‡
+//engineer.sensors.laser_switch_left	//å·¦æ¿€å…‰
+//engineer.sensors.laser_switch_right	//å³æ¿€å…‰
+//catch_ultrasound						//ä¸­é—´è¶…å£°æ³¢
 
-engineer_state_t engineer;		//¹¤³Ì³µÄ¿±êÖµ
-engineer_remote_t remote_origin;//Ôİ´æÒ£¿ØÆ÷Êı¾İ
-								//Ìí¼Ó¶Â×ª±£»¤ÈÎÎñ£¨½¨Á¢¿ØÖÆ±äÁ¿£©
+engineer_state_t engineer;		 //å·¥ç¨‹è½¦ç›®æ ‡å€¼
+engineer_remote_t remote_origin; //æš‚å­˜é¥æ§å™¨æ•°æ®
+								 //æ·»åŠ å µè½¬ä¿æŠ¤ä»»åŠ¡ï¼ˆå»ºç«‹æ§åˆ¶å˜é‡ï¼‰
 void task_print(void *param);
-void chassis_keybord_mode(engineer_chassis_t* robot);
-void chassis_handle_mode(engineer_chassis_t* robot);
+void chassis_keybord_mode(engineer_chassis_t *robot);
+void chassis_handle_mode(engineer_chassis_t *robot);
 void lift_handle_mode(void);
 void lift_keybord_mode(void);
 bool ammunition_box_towards(void);
 bool badass;
 
-void task_engineer_state(void* param)
+void task_engineer_state(void *param)
 {
 	task_insert_CCM(task_print, NULL, 1);
-//	task_insert_CCM(task_sensors, NULL, 2);
+	//	task_insert_CCM(task_sensors, NULL, 2);
 	p_remote_data data = NULL;
-	engineer.chassis.motor=RM3508;     //ÏÈÖ¸¶¨µç»úÖÖÀàÒÔ·½±ã·¢»Ó½ÓÏÂÀ´µÄ´úÂë¹¦ÄÜ
-	
-	while(1)
+	engineer.chassis.motor = RM3508; //å…ˆæŒ‡å®šç”µæœºç§ç±»ä»¥æ–¹ä¾¿å‘æŒ¥æ¥ä¸‹æ¥çš„ä»£ç åŠŸèƒ½
+
+	while (1)
 	{
 		data = msg_get_read_some(&remote_msg);
-		if(data!=NULL)
+		if (data != NULL)
 		{
-			//±£´æÒ£¿ØÆ÷Ô­Ê¼¿ØÖÆĞÅºÅ
-			remote_origin.remote_JL_LR=RPC_ZERO(((s16)data->JL_LR - 1024),10);
-			remote_origin.remote_JL_UD=RPC_ZERO(((s16)data->JL_UD - 1024),10);
-			remote_origin.remote_JR_LR=RPC_ZERO(((s16)data->JR_LR - 1024),10);
-			remote_origin.remote_JR_UD=RPC_ZERO(((s16)data->JR_UD - 1024),10);
-			remote_origin.remote_LL=(s16)data->LL - 1024;
-			remote_origin.remote_SR=data->SR;
-			remote_origin.remote_SL=data->SL;
-			//ÅĞ¶Ï¿ØÖÆÄ£Ê½¡ª¡ª¡ª¡ªÒ£¿ØÆ÷/¼üÊó
-			switch(data->SL)
+			//ä¿å­˜é¥æ§å™¨åŸå§‹æ§åˆ¶ä¿¡å·
+			remote_origin.remote_JL_LR = RPC_ZERO(((s16)data->JL_LR - 1024), 10);
+			remote_origin.remote_JL_UD = RPC_ZERO(((s16)data->JL_UD - 1024), 10);
+			remote_origin.remote_JR_LR = RPC_ZERO(((s16)data->JR_LR - 1024), 10);
+			remote_origin.remote_JR_UD = RPC_ZERO(((s16)data->JR_UD - 1024), 10);
+			remote_origin.remote_LL = (s16)data->LL - 1024;
+			remote_origin.remote_SR = data->SR;
+			remote_origin.remote_SL = data->SL;
+			//åˆ¤æ–­æ§åˆ¶æ¨¡å¼â€”â€”â€”â€”é¥æ§å™¨/é”®é¼ 
+			switch (data->SL)
 			{
-				case RP_S_UP:
-					engineer.remote_mode=handle;
-					engineer.chassis.mode=catwalk;
-					break;
-				case RP_S_MID:
+			case RP_S_UP:
+				engineer.remote_mode = handle;
+				engineer.chassis.mode = catwalk;
+				break;
+			case RP_S_MID:
+			{
+				engineer.remote_mode = handle;
+				engineer.chassis.mode = follow;
+				if (lift_motors == 0)
 				{
-					engineer.remote_mode=handle;
-					engineer.chassis.mode=follow;
-				  if(lift_motors == 0)
-				  {
-				  chassis_motors = 1;
-				  lift_motors = 1;
-				  lift_x_motors = 1;
-				  claw_motors = 1;
-				  relief_motors = 1;
-				  holder_motors = 1;
-				  arm_motors = 1;
-				  }
-			  }
-					break;
-				case RP_S_DOWN:
-					engineer.remote_mode=keyboard;
-					chassis_motors = 0;
-				  lift_motors = 0;
-				  lift_x_motors = 0;
-				  claw_motors = 0;
-				  relief_motors = 0;
-				  holder_motors = 0;
-				  arm_motors = 0;
-					break;
-				default:
-					engineer.remote_mode=handle;
-					engineer.chassis.mode=stop;
-					break;
+					chassis_motors = 1;
+					lift_motors = 1;
+					lift_x_motors = 1;
+					claw_motors = 1;
+					relief_motors = 1;
+					holder_motors = 1;
+					arm_motors = 1;
+				}
 			}
-			//Õë¶Ô²»Í¬¿ØÖÆÄ£Ê½·Ö±ğ½øĞĞÄ¿±êÖµ¸ø¶¨
+			break;
+			case RP_S_DOWN:
+				engineer.remote_mode = keyboard;
+				chassis_motors = 0;
+				lift_motors = 0;
+				lift_x_motors = 0;
+				claw_motors = 0;
+				relief_motors = 0;
+				holder_motors = 0;
+				arm_motors = 0;
+				break;
+			default:
+				engineer.remote_mode = handle;
+				engineer.chassis.mode = stop;
+				break;
+			}
+			//é’ˆå¯¹ä¸åŒæ§åˆ¶æ¨¡å¼åˆ†åˆ«è¿›è¡Œç›®æ ‡å€¼ç»™å®š
 			//
-			switch(engineer.remote_mode)
+			switch (engineer.remote_mode)
 			{
-				case handle:
-					chassis_handle_mode(&engineer.chassis);
-					lift_handle_mode();
-					lift_keybord_mode();
-					break;
-				case keyboard:
-					chassis_keybord_mode(&engineer.chassis);
-					lift_keybord_mode();
-					break;
+			case handle:
+				chassis_handle_mode(&engineer.chassis);
+				lift_handle_mode();
+				lift_keybord_mode();
+				break;
+			case keyboard:
+				chassis_keybord_mode(&engineer.chassis);
+				lift_keybord_mode();
+				break;
 			}
 		}
 		else
 		{
-			engineer.chassis.mode=stop;
+			engineer.chassis.mode = stop;
 		}
 		task_delay_ms(1);
 	}
 }
 
-void chassis_handle_mode(engineer_chassis_t* robot)
+void chassis_handle_mode(engineer_chassis_t *robot)
 {
-	switch(robot->mode)
+	switch (robot->mode)
 	{
-		case follow:
-			engineer.chassis.move_X_SPD=remote_origin.remote_JL_LR;
-			engineer.chassis.move_Y_SPD=remote_origin.remote_JL_UD;
-			engineer.chassis.move_Z_SPD=remote_origin.remote_JR_LR;
-			engineer.bullet.holder+=remote_origin.remote_JR_UD*1;
-			break;
-		case catwalk:
-			engineer.chassis.move_X_SPD=0;
-			engineer.chassis.move_Y_SPD=0;
-			engineer.chassis.move_Z_SPD=0;
-			engineer.relief.relief_frame=0;
-			break;
-		case stop:
-			/*
+	case follow:
+		engineer.chassis.move_X_SPD = remote_origin.remote_JL_LR;
+		engineer.chassis.move_Y_SPD = remote_origin.remote_JL_UD;
+		engineer.chassis.move_Z_SPD = remote_origin.remote_JR_LR;
+		engineer.bullet.holder += remote_origin.remote_JR_UD * 1;
+		break;
+	case catwalk:
+		engineer.chassis.move_X_SPD = 0;
+		engineer.chassis.move_Y_SPD = 0;
+		engineer.chassis.move_Z_SPD = 0;
+		engineer.relief.relief_frame = 0;
+		break;
+	case stop:
+		/*
 			
 			*/
-			break;
-		default:
-			engineer.chassis.move_X_SPD=0;
-			engineer.chassis.move_Y_SPD=0;
-			engineer.chassis.move_Z_SPD=0;
-			
-			break;
+		break;
+	default:
+		engineer.chassis.move_X_SPD = 0;
+		engineer.chassis.move_Y_SPD = 0;
+		engineer.chassis.move_Z_SPD = 0;
+
+		break;
 	}
-	engineer_chassis_speed_T(engineer.chassis.move_Y_SPD,engineer.chassis.move_X_SPD,engineer.chassis.move_Z_SPD);
+	engineer_chassis_speed_T(engineer.chassis.move_Y_SPD, engineer.chassis.move_X_SPD, engineer.chassis.move_Z_SPD);
 }
 
-void chassis_keybord_mode(engineer_chassis_t* robot)
+void chassis_keybord_mode(engineer_chassis_t *robot)
 {
-	
 }
 
 void lift_handle_mode(void)
 {
-	static u8 last_sr=4;
-	static S16 last_ll=0;
-	static u8 f_last_sr=4;
-	static S16 f_last_ll=0;
-	if(remote_origin.remote_LL>250)		//ÓÒ¿ª¹ØÓÉÖĞ¼ä²¦µ½ÉÏÃæ¿ØÖÆ×¦×ÓµÄ×¥È¡ºÏ·Å
+	static u8 last_sr = 4;
+	static S16 last_ll = 0;
+	static u8 f_last_sr = 4;
+	static S16 f_last_ll = 0;
+	if (remote_origin.remote_LL > 250) //å³å¼€å…³ç”±ä¸­é—´æ‹¨åˆ°ä¸Šé¢æ§åˆ¶çˆªå­çš„æŠ“å–åˆæ”¾
 	{
-			TIM_SetCompare1(TIM4,9600);
-			TIM_SetCompare2(TIM4,9600);
+		TIM_SetCompare1(TIM4, 9600);
+		TIM_SetCompare2(TIM4, 9600);
 	}
-	else  
+	else
 	{
-			TIM_SetCompare1(TIM4,10350);	
-			TIM_SetCompare2(TIM4,10350);
-				
+		TIM_SetCompare1(TIM4, 10350);
+		TIM_SetCompare2(TIM4, 10350);
 	}
-	if(engineer.chassis.mode==catwalk)
+	if (engineer.chassis.mode == catwalk)
 	{
-		//ÒÔÏÂ¿ØÖÆÎªÎ»ÖÃ»·¿ØÖÆ
-		engineer.bullet.lift_height+=remote_origin.remote_JL_UD*1;	//×óÒ¡¸ËÉÏÏÂ¿ØÖÆÌ§Éı¸ß¶È£¨°ë×Ô¶¯
-					//´Ë´¦½Ç¶ÈµÄ×î´óÖµÓ¦¸Ã¸Ä³Éºê¶¨Òå
-		engineer.bullet.lift_x_dis+=remote_origin.remote_JR_LR*1;	//Ì§Éı×óÓÒºáÒÆ£¨°ë×Ô¶¯
-//					//½øÒ»²½²âÊÔÔÙ¸ÄÕıÏŞ·ù£¬Ä¬ÈÏÖĞ¼äÎ»ÖÃ»·Îª0
-		engineer.bullet.claw_angle+=remote_origin.remote_JR_UD*1;	//ÓÒÒ¡¸Ë×¦×ÓµÄĞı×ª½Ç£¨°ë×Ô¶¯
-		
-//		engineer.bullet.arm_angle+=remote_origin.remote_JL_UD*0.1;	
-					
-//		engineer.bullet.arm_x_angle+=remote_origin.remote_JL_UD*0.5;	
-		
+		//ä»¥ä¸‹æ§åˆ¶ä¸ºä½ç½®ç¯æ§åˆ¶
+		engineer.bullet.lift_height += remote_origin.remote_JL_UD * 1; //å·¦æ‘‡æ†ä¸Šä¸‹æ§åˆ¶æŠ¬å‡é«˜åº¦ï¼ˆåŠè‡ªåŠ¨
+																	   //æ­¤å¤„è§’åº¦çš„æœ€å¤§å€¼åº”è¯¥æ”¹æˆå®å®šä¹‰
+		engineer.bullet.lift_x_dis += remote_origin.remote_JR_LR * 1;  //æŠ¬å‡å·¦å³æ¨ªç§»ï¼ˆåŠè‡ªåŠ¨
+																	   //					//è¿›ä¸€æ­¥æµ‹è¯•å†æ”¹æ­£é™å¹…ï¼Œé»˜è®¤ä¸­é—´ä½ç½®ç¯ä¸º0
+		engineer.bullet.claw_angle += remote_origin.remote_JR_UD * 1;  //å³æ‘‡æ†çˆªå­çš„æ—‹è½¬è§’ï¼ˆåŠè‡ªåŠ¨
 
-	last_sr=remote_origin.remote_SR;
-	last_ll=remote_origin.remote_LL;
+		//		engineer.bullet.arm_angle+=remote_origin.remote_JL_UD*0.1;
+
+		//		engineer.bullet.arm_x_angle+=remote_origin.remote_JL_UD*0.5;
+
+		last_sr = remote_origin.remote_SR;
+		last_ll = remote_origin.remote_LL;
 	}
-	if(engineer.chassis.mode==follow)
+	if (engineer.chassis.mode == follow)
 	{
 
-//		engineer.relief.relief_frame+=remote_origin.remote_JR_UD*1;
-		
-//		if(remote_origin.remote_SR==RP_S_UP)
-//		{
-//			
-//			for(int i=0;i<4;i++)
-//			{
-//				engineer_control.chassis.position_T[i]+=600;
-//			}
-//			engineer.bullet.holder=-1900;
-//		}
-		
-		if(remote_origin.remote_SR==RP_S_MID&&f_last_sr==RP_S_UP)	//ÓÒ¿ª¹ØÓÉÖĞ¼ä²¦µ½ÏÂÃæ¿ØÖÆ¾ÈÔ®
+		//		engineer.relief.relief_frame+=remote_origin.remote_JR_UD*1;
+
+		//		if(remote_origin.remote_SR==RP_S_UP)
+		//		{
+		//
+		//			for(int i=0;i<4;i++)
+		//			{
+		//				engineer_control.chassis.position_T[i]+=600;
+		//			}
+		//			engineer.bullet.holder=-1900;
+		//		}
+
+		if (remote_origin.remote_SR == RP_S_MID && f_last_sr == RP_S_UP) //å³å¼€å…³ç”±ä¸­é—´æ‹¨åˆ°ä¸‹é¢æ§åˆ¶æ•‘æ´
 		{
-//			engineer.bullet.holder+=8192-engineer.bullet.holder;
+			//			engineer.bullet.holder+=8192-engineer.bullet.holder;
 		}
-		
-		if(remote_origin.remote_SR==RP_S_DOWN&&f_last_sr==RP_S_MID)	//ÓÒ¿ª¹ØÓÉÖĞ¼ä²¦µ½ÏÂÃæ¿ØÖÆ¾ÈÔ®
+
+		if (remote_origin.remote_SR == RP_S_DOWN && f_last_sr == RP_S_MID) //å³å¼€å…³ç”±ä¸­é—´æ‹¨åˆ°ä¸‹é¢æ§åˆ¶æ•‘æ´
 		{
-			engineer.relief.relief_frame+=76800;
+			engineer.relief.relief_frame += 76800;
 		}
-		
-		if(remote_origin.remote_SR==RP_S_MID&&f_last_sr==RP_S_DOWN)
+
+		if (remote_origin.remote_SR == RP_S_MID && f_last_sr == RP_S_DOWN)
 		{
-			engineer.relief.relief_frame-=76800;
+			engineer.relief.relief_frame -= 76800;
 		}
-		f_last_sr=remote_origin.remote_SR;
-		f_last_ll=remote_origin.remote_LL;
+		f_last_sr = remote_origin.remote_SR;
+		f_last_ll = remote_origin.remote_LL;
 	}
-	
 }
 
+//ä¼ æ„Ÿå™¨å˜é‡
+//engineer.sensors.laser_switch_left	//å·¦æ¿€å…‰
+//engineer.sensors.laser_switch_right	//å³æ¿€å…‰
+//engineer.sensors.catch_ultrasound		//ä¸­é—´è¶…å£°æ³¢
+//åˆ©ç”¨ä¼ æ„Ÿå™¨å®ç°çš„ä¸€å°†è‡ªåŠ¨æŠ“å¼¹
 
-//´«¸ĞÆ÷±äÁ¿
-//engineer.sensors.laser_switch_left	//×ó¼¤¹â
-//engineer.sensors.laser_switch_right	//ÓÒ¼¤¹â
-//engineer.sensors.catch_ultrasound		//ÖĞ¼ä³¬Éù²¨
-//ÀûÓÃ´«¸ĞÆ÷ÊµÏÖµÄÒ»½«×Ô¶¯×¥µ¯
+int start_location = 110000;   //ä¸Šå‡åç§»åŠ¨çš„å¼€å§‹å€¼ï¼Œé€€å‡ºä¸€é”®æŠ“å¼¹åçš„å›å¤å¤„
+int left_limits = -540000;	   //è´´ç€å·¦é“æ†å‡ºå‘æ—¶çš„å·¦é™å¹…å€¼,æ­£å¸¸æ¥è¯´æ˜¯è´Ÿçš„
+int right_limits = 1120000;	   //è´´ç€å·¦é“æ†å‡ºå‘æ—¶çš„å³é™å¹…å€¼
+#define lift_height_max 60000; //æŠ¬å‡æœ€å¤§å€¼
 
-int start_location=110000 	;				//ÉÏÉıºóÒÆ¶¯µÄ¿ªÊ¼Öµ£¬ÍË³öÒ»¼ü×¥µ¯ºóµÄ»Ø¸´´¦
-int left_limits=-540000		;				//Ìù×Å×óÌú¸Ë³ö·¢Ê±µÄ×óÏŞ·ùÖµ,Õı³£À´ËµÊÇ¸ºµÄ
-int right_limits=1120000	;				//Ìù×Å×óÌú¸Ë³ö·¢Ê±µÄÓÒÏŞ·ùÖµ
-#define lift_height_max 60000;				//Ì§Éı×î´óÖµ
-
-bool ammunition_box_towards(void)										//ÅĞ¶Ïµ¯Ò©ÏäÊÇ·ñÔÚÇ°·½
-{	
-	if (engineer.sensors.laser_switch_left==1 && engineer.sensors.laser_switch_right==1 && engineer.sensors.laser_switch_mid==0)
+bool ammunition_box_towards(void) //åˆ¤æ–­å¼¹è¯ç®±æ˜¯å¦åœ¨å‰æ–¹
+{
+	if (engineer.sensors.laser_switch_left == 1 && engineer.sensors.laser_switch_right == 1 && engineer.sensors.laser_switch_mid == 0)
 		return true;
 	else
 		return false;
 }
 
+static bool flag_temp_catchok = false;
 
-static bool flag_temp_catchok=false;
+void lift_keybord_mode(void) //é¥æ§å™¨çš„ä¸€é”®æŠ“å¼¹
+{
 
-void lift_keybord_mode(void)											//Ò£¿ØÆ÷µÄÒ»¼ü×¥µ¯
-{	
-	
-	static u8 last_sl=4;												//Ò£¿ØÆ÷×ó²¦¸Ë´ÓÖĞ¼ä²¦µ½ÏÂÃæ¿ªÆôÒ»¼ü×¥µ¯
-																		//Ò£¿ØÆ÷ÓÒ²¦¸Ë´ÓÖĞ¼ä²¦µ½ÏÂÃæÈ¡ÏûÒ»¼ü×¥µ¯£¨Á¢¿Ì£©(µ±ÓÒ²¦¸ËÔÚÏÂ·½µÄÊ±ºòÎŞ·¨È¡µ¯£©
-	u16 i=0;
-	if(remote_origin.remote_SL==RP_S_DOWN && last_sl==RP_S_MID)
-	{																	//´Ë´¦Ìí¼ÓËùÓĞ»ú¹¹¹éÁãÔË¶¯£¬×¢ÒâÏÈºó´ÎĞòºÅ   
-		
-																		// ×¦×Ó×óÓÒºáÒÆ¹éÎ»   //ÏòÓÒÎªÕı£¬µ½Ê±ÔÙ¾ßÌå²âÊÔÕı¸º£¬ÏŞ·ù£¨ÁôÏÂÓàÁ¿£¬±ÜÃâ×óÓÒÅöµ½³µ£©
-		if(abs(engineer_control.lift_x.position_C)>500)
+	static u8 last_sl = 4; //é¥æ§å™¨å·¦æ‹¨æ†ä»ä¸­é—´æ‹¨åˆ°ä¸‹é¢å¼€å¯ä¸€é”®æŠ“å¼¹
+						   //é¥æ§å™¨å³æ‹¨æ†ä»ä¸­é—´æ‹¨åˆ°ä¸‹é¢å–æ¶ˆä¸€é”®æŠ“å¼¹ï¼ˆç«‹åˆ»ï¼‰(å½“å³æ‹¨æ†åœ¨ä¸‹æ–¹çš„æ—¶å€™æ— æ³•å–å¼¹ï¼‰
+	u16 i = 0;
+	if (remote_origin.remote_SL == RP_S_DOWN && last_sl == RP_S_MID)
+	{ //æ­¤å¤„æ·»åŠ æ‰€æœ‰æœºæ„å½’é›¶è¿åŠ¨ï¼Œæ³¨æ„å…ˆåæ¬¡åºå·
+
+		// çˆªå­å·¦å³æ¨ªç§»å½’ä½   //å‘å³ä¸ºæ­£ï¼Œåˆ°æ—¶å†å…·ä½“æµ‹è¯•æ­£è´Ÿï¼Œé™å¹…ï¼ˆç•™ä¸‹ä½™é‡ï¼Œé¿å…å·¦å³ç¢°åˆ°è½¦ï¼‰
+		if (abs(engineer_control.lift_x.position_C) > 500)
 		{
-			engineer.bullet.lift_x_dis=0;
-			while(abs(engineer_control.lift_x.position_C)>500)
-				task_delay_ms(1);	
-		}					
-		if(abs(engineer_control.claw.position_C[0])>500||abs(engineer_control.claw.position_C[1])>500)
+			engineer.bullet.lift_x_dis = 0;
+			while (abs(engineer_control.lift_x.position_C) > 500)
+				task_delay_ms(1);
+		}
+		if (abs(engineer_control.claw.position_C[0]) > 500 || abs(engineer_control.claw.position_C[1]) > 500)
 		{
-			engineer.bullet.claw_angle=0;								//×¦×Ó¹éÎ»
-			while(abs(engineer_control.claw.position_C[0])>500||abs(engineer_control.claw.position_C[1])>500)
+			engineer.bullet.claw_angle = 0; //çˆªå­å½’ä½
+			while (abs(engineer_control.claw.position_C[0]) > 500 || abs(engineer_control.claw.position_C[1]) > 500)
 				task_delay_ms(1);
 		}
 
-																		//ÒÔÏÂÈ·ÈÏÉÏÊö»ú¹¹ÒÔ¼°¹éÎ»Íê±Ï¡ı
-		if (abs(engineer_control.claw.position_C[1])<500 && abs(engineer_control.lift_x.position_C)<500)
+		//ä»¥ä¸‹ç¡®è®¤ä¸Šè¿°æœºæ„ä»¥åŠå½’ä½å®Œæ¯•â†“
+		if (abs(engineer_control.claw.position_C[1]) < 500 && abs(engineer_control.lift_x.position_C) < 500)
 		{
-				engineer.bullet.lift_height=0;							//Ì§Éı¹éÎ»
-				while(abs(engineer_control.lift.position_C[0])>5000||abs(engineer_control.lift.position_C[1])>5000)
-					task_delay_ms(1);
-		}				
+			engineer.bullet.lift_height = 0; //æŠ¬å‡å½’ä½
+			while (abs(engineer_control.lift.position_C[0]) > 5000 || abs(engineer_control.lift.position_C[1]) > 5000)
+				task_delay_ms(1);
+		}
 
-				
-		engineer.bullet.lift_x_dis=start_location;						//»Øµ½ÉÏÉıÆğÊ¼Î»ÖÃ
-		while(abs(engineer.bullet.lift_x_dis-start_location)>600)
+		engineer.bullet.lift_x_dis = start_location; //å›åˆ°ä¸Šå‡èµ·å§‹ä½ç½®
+		while (abs(engineer.bullet.lift_x_dis - start_location) > 600)
 			task_delay_ms(1);
-		
-	
-		for(i=0;i<350;i++)
-		{					
-			engineer.bullet.lift_height+=1000;
-			task_delay_ms(5);											//´ËºóÊ¹ÓÃ¼üÅÌ²Ù×÷Ó¦µ±Ìí¼ÓÒ»¼ş³·Ïú²Ù×÷¹¦ÄÜ£¨ÔÚforÀïÃæbreak£©£¬°ÑËùÓĞ²Ù×÷ºóÃæµÄ¶¼Ìø¹ı
+
+		for (i = 0; i < 350; i++)
+		{
+			engineer.bullet.lift_height += 1000;
+			task_delay_ms(5); //æ­¤åä½¿ç”¨é”®ç›˜æ“ä½œåº”å½“æ·»åŠ ä¸€ä»¶æ’¤é”€æ“ä½œåŠŸèƒ½ï¼ˆåœ¨foré‡Œé¢breakï¼‰ï¼ŒæŠŠæ‰€æœ‰æ“ä½œåé¢çš„éƒ½è·³è¿‡
 		}
 		task_delay_ms(1000);
-		
-		engineer.bullet.lift_x_dis=left_limits;							//×ßµ½×î×ó±ß¿ªÊ¼ÏòÓÒÉ¨Ãè
-		while(abs(engineer_control.lift_x.position_C-left_limits)>600)
+
+		engineer.bullet.lift_x_dis = left_limits; //èµ°åˆ°æœ€å·¦è¾¹å¼€å§‹å‘å³æ‰«æ
+		while (abs(engineer_control.lift_x.position_C - left_limits) > 600)
 			task_delay_ms(1);
-							
-		for(;abs(engineer.bullet.lift_x_dis-right_limits)>=600;)		//Éè¶¨ÓÒ±ßÄ¿±ê
+
+		for (; abs(engineer.bullet.lift_x_dis - right_limits) >= 600;) //è®¾å®šå³è¾¹ç›®æ ‡
 		{
-			engineer.bullet.lift_x_dis+=2000;
+			engineer.bullet.lift_x_dis += 2000;
 			task_delay_ms(10);
-			flag_temp_catchok=ammunition_box_towards();
-			
-			if(auto_collect_mode)//Ò»¼üÍË³ö
-				{	
-					break;
-				}
-				
-			if(flag_temp_catchok)
+			flag_temp_catchok = ammunition_box_towards();
+
+			if (auto_collect_mode) //ä¸€é”®é€€å‡º
 			{
-				engineer.bullet.lift_x_dis=engineer_control.lift_x.position_C;
-				for(i=0;i<76;i++)
+				break;
+			}
+
+			if (flag_temp_catchok)
+			{
+				engineer.bullet.lift_x_dis = engineer_control.lift_x.position_C;
+				for (i = 0; i < 76; i++)
 				{
-					if(auto_collect_mode)//Ò»¼üÍË³ö
-					{	
-						i=100;																						 //Ê§ÄÜÆøÂ·
+					if (auto_collect_mode) //ä¸€é”®é€€å‡º
+					{
+						i = 100; //å¤±èƒ½æ°”è·¯
 						break;
 					}
-					engineer.bullet.claw_angle+=1000;
+					engineer.bullet.claw_angle += 1000;
 					task_delay_ms(5);
 				}
-				
-				if(i==76)
+
+				if (i == 76)
 					engineer_control.gas.clamp_claw();
 				task_delay_ms(500);
-				
-				
-				for(i=0;i<60;i++)
+
+				for (i = 0; i < 60; i++)
 				{
-					if(auto_collect_mode)//Ò»¼üÍË³ö
-					{	
-						i=100;
+					if (auto_collect_mode) //ä¸€é”®é€€å‡º
+					{
+						i = 100;
 						break;
 					}
-					engineer.bullet.claw_angle-=1000;
-					task_delay_ms(5);					
+					engineer.bullet.claw_angle -= 1000;
+					task_delay_ms(5);
 				}
 				task_delay_ms(1500);
 
-				
-				for(i=0;i<50;i++)
+				for (i = 0; i < 50; i++)
 				{
-					if(auto_collect_mode)//Ò»¼üÍË³ö
-					{	
-						i=100;
+					if (auto_collect_mode) //ä¸€é”®é€€å‡º
+					{
+						i = 100;
 						break;
 					}
-					engineer.bullet.claw_angle+=1000;
+					engineer.bullet.claw_angle += 1000;
 					task_delay_ms(5);
 				}
-				
-				if(i==50)
+
+				if (i == 50)
 					engineer_control.gas.loose_calw();
 				task_delay_ms(100);
 
-				
-				for(i=0;i<66;i++)
+				for (i = 0; i < 66; i++)
 				{
-					if(auto_collect_mode)//Ò»¼üÍË³ö
-					{	
-						i=100;
+					if (auto_collect_mode) //ä¸€é”®é€€å‡º
+					{
+						i = 100;
 						break;
 					}
-						
-					engineer.bullet.claw_angle-=1000;
+
+					engineer.bullet.claw_angle -= 1000;
 					task_delay_ms(5);
 				}
-				
-				
-				engineer.bullet.claw_angle=0;
-				
-			if(remote_origin.remote_SL==RP_S_DOWN && remote_origin.remote_SR==RP_S_DOWN)
-			{	 
-				break;
-				
-			}
+
+				engineer.bullet.claw_angle = 0;
+
+				if (remote_origin.remote_SL == RP_S_DOWN && remote_origin.remote_SR == RP_S_DOWN)
+				{
+					break;
+				}
 			}
 		}
-		
-		engineer.bullet.lift_x_dis=start_location;						//»Øµ½ÉÏÉıÆğÊ¼Î»ÖÃ
-		while(abs(engineer_control.lift_x.position_C-start_location)>600)
+
+		engineer.bullet.lift_x_dis = start_location; //å›åˆ°ä¸Šå‡èµ·å§‹ä½ç½®
+		while (abs(engineer_control.lift_x.position_C - start_location) > 600)
 			task_delay_ms(1);
 		task_delay_ms(700);
-	
-		for(i=0;i<350;i++)													//ÏÂ½µµ½µ×
-			{
-				
-				engineer.bullet.lift_height-=1000;
-				task_delay_ms(5);
-			}
-			engineer.bullet.lift_height=0;
+
+		for (i = 0; i < 350; i++) //ä¸‹é™åˆ°åº•
+		{
+
+			engineer.bullet.lift_height -= 1000;
+			task_delay_ms(5);
+		}
+		engineer.bullet.lift_height = 0;
 	}
-	
+
 	else
 	{
-		
 	}
-	last_sl=remote_origin.remote_SL;
-	
-	
-	//´Ë´¦Ó¦µ±Ìí¼Ó³·Ïú²Ù×÷ºóµÄ¹éÁã
+	last_sl = remote_origin.remote_SL;
+
+	//æ­¤å¤„åº”å½“æ·»åŠ æ’¤é”€æ“ä½œåçš„å½’é›¶
 }
 void task_print(void *param)
 {
 	float temp_send[8];
-	
-	while(1)
+
+	while (1)
 	{
-		temp_send[0]=engineer_control.claw.position_C[1];
-		temp_send[1]=engineer_control.claw.position_T[1];
-		temp_send[2]=engineer_control.claw.speed_C[0];
-		temp_send[3]=engineer_control.claw.speed_T[0];
-		temp_send[4]=engineer_control.claw.position_T[0];
-		temp_send[5]=engineer_control.claw.position_C[0];
-		temp_send[6]=engineer_control.holder.angle_T;
-		temp_send[7]=engineer_control.claw.current_T[0];
-		
-		print_wave(8,4,&temp_send[0],&temp_send[1],&temp_send[2],&temp_send[3],&temp_send[4],&temp_send[5],&temp_send[6],&temp_send[7]);
-		
+		temp_send[0] = engineer_control.claw.position_C[1];
+		temp_send[1] = engineer_control.claw.position_T[1];
+		temp_send[2] = engineer_control.claw.speed_C[0];
+		temp_send[3] = engineer_control.claw.speed_T[0];
+		temp_send[4] = engineer_control.claw.position_T[0];
+		temp_send[5] = engineer_control.claw.position_C[0];
+		temp_send[6] = engineer_control.holder.angle_T;
+		temp_send[7] = engineer_control.claw.current_T[0];
+
+		print_wave(8, 4, &temp_send[0], &temp_send[1], &temp_send[2], &temp_send[3], &temp_send[4], &temp_send[5], &temp_send[6], &temp_send[7]);
+
 		task_delay_ms(10);
 	}
 }
-
-	
