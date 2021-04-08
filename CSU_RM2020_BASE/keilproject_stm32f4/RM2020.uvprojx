@@ -443,11 +443,6 @@
           <GroupName>user/other</GroupName>
           <Files>
             <File>
-              <FileName>fast_tri_func.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\user\user_app\fast_tri_func.c</FilePath>
-            </File>
-            <File>
               <FileName>user_can.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\user\user_other\user_can.c</FilePath>

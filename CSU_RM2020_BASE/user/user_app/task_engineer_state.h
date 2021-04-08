@@ -25,26 +25,6 @@ typedef enum
 	
 }motor_type_t;
 
-typedef struct 
-{
-	uint16_t w;
-	uint16_t s;
-	uint16_t a;
-	uint16_t d;	
-    uint16_t shift;
-	uint16_t ctrl;
-	uint16_t q;
-	uint16_t e;
-	uint16_t r;
-	uint16_t f;
-	uint16_t g;
-	uint16_t z;
-	uint16_t x;
-	uint16_t c;
-	uint16_t v;
-	uint16_t b;
-}Kb16_t,*Kb16_p;
-
 typedef struct
 {
 	S16 remote_JL_UD;
@@ -57,15 +37,6 @@ typedef struct
 	u8 remote_SL;
 	u8 remote_SR;
 	
-	int16_t	    Mouse_x;			
-	int16_t	    Mouse_y;			
-	uint8_t	    MouseClick_left;		
-	uint8_t	    MouseClick_right;
-	
-  uint16_t    Key;
-  Kb16_t      KeyBoard;
-    
-  int16_t     Wheel;
 }engineer_remote_t;
 
 typedef struct

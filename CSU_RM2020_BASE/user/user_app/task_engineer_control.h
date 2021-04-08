@@ -122,8 +122,8 @@ typedef struct
 
 typedef struct
 {
-	int angle_T;
-	float yaw_angle;
+	float angle_T;
+	
 	S32 position_T;//目标位置
 	S32 position_C;//实际位置
 	
@@ -136,11 +136,9 @@ typedef struct
 	int16_t CAN_data;//CAN发送数据
 	
 	PID_Absolute_Type pid_position;//位置环
-	PID_Absolute_Type pid_speed;//速度环
-	PID_Increment_Type pid_current;//电流环
+	PID_Absolute_Type pid_speed;
+	PID_Increment_Type pid_current;//速度环
 	
-	
-	bool holder_control_status;
 }holder_control_t;
 
 typedef struct
@@ -181,6 +179,11 @@ typedef struct
 	
 }arm_x_control_t;
 
+typedef struct
+{
+	uint16_t ore_state;  //
+	
+}ore_control_t;
 
 typedef struct
 {
@@ -193,7 +196,7 @@ typedef struct
 	arm_control_t arm;					 //一级机械臂（两电机）
 	arm_x_control_t arm_x;       //二级机械臂（一电机）
 	gas_control_t gas;           //
-	
+	ore_control_t ore;           //一键取矿
 }engineer_control_t;
 extern engineer_control_t engineer_control;
 
@@ -206,3 +209,9 @@ void task_engineer_control(void* param);
 
 #endif
 
+#ifndef _FAST_TRI_FUNC
+#define _FAST_TRI_FUNC
+#include <stdint.h>
+float fast_cos(int16_t angle);
+float fast_sin(int16_t angle);
+#endif

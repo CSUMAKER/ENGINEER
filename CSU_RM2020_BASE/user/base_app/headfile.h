@@ -7,7 +7,7 @@
 //MAIN_CONTROL_2020sentry：边照龙的2020哨兵主控
 /***********三选一，否则会崩*******/
 
-#define MAIN_CONTROL_2019
+//#define MAIN_CONTROL_2019
 //#define MAIN_CONTROL_2020solider
 #define MAIN_CONTROL_2020sentry
 
@@ -26,7 +26,6 @@
 //****arithmetic****
 #include "math.h"
 #include "arm_math.h"
-#include "fast_tri_func.h"
 
 //****device****
 #include "flash_data.h"

@@ -176,7 +176,7 @@ void remote_test(p_remote_data data)
 	temp_mx=data->MX;
 	temp_my=data->MY;
 	temp_my=(S16)canrate.send.dbus;
-	print_wave(8,2,&data->JL_LR,&data->JL_UD,&data->JR_LR,&data->JR_UD,&data->LL,&temp_mx,&temp_my,&data->KEY);
+//	print_wave(8,2,&data->JL_LR,&data->JL_UD,&data->JR_LR,&data->JR_UD,&data->LL,&temp_mx,&temp_my,&data->KEY);
 }
 /*
 float * kf_temp;

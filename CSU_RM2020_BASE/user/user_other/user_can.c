@@ -76,14 +76,13 @@ extern int16_t yaw_torque;
 extern int16_t pitch_speed;		//转速
 extern int16_t yaw_speed;
 
-float look1,look2;
 static float n = 0.6;//电流低通滤波的n值
 
 static S32 lift_init_position[2]={0,0};
 static S32 lift_x_init_position=0;
 static S32 claw_init_position[2]={0,0};
 static S32 relief_init_position[2]={0,0};
-static S32 holder_init_position[2]={0,0};
+static S32 holder_init_position=0;
 static S32 arm_init_position[2]={0,0};
 static S32 arm_x_init_position=0;
 static S32 chassis_init_position[4]={0,0,0,0};
@@ -104,7 +103,7 @@ void CAN1_RX0_IRQHandler(void)
 		if ((RxMessage.IDE==CAN_ID_STD)&&(RxMessage.DLC==8))	
 		{
 			if((RxMessage.StdId >= 0x201) && (RxMessage.StdId <= 0x208))
-    				circle_count_simple(&(motor_circle_simple[0][RxMessage.StdId-0x201]), ((U16)(RxMessage.Data[0]<<8))|((U16)RxMessage.Data[1]));
+				circle_count_simple(&(motor_circle_simple[0][RxMessage.StdId-0x201]), ((U16)(RxMessage.Data[0]<<8))|((U16)RxMessage.Data[1]));
 
 			//二级抬升电机
 			if(RxMessage.StdId == 0x201)
@@ -237,11 +236,26 @@ void CAN1_RX0_IRQHandler(void)
 				canrate.inc.rx_motor[14]++;
 			}
 			
+			
+			
+			//测试
+//			if(RxMessage.StdId == 0x206)
+//			{
+//				canrate.inc.rx_motor[5]++;
+//			}
+			
+			//底盘测试用陀螺仪
+			if(RxMessage.StdId == 0x513)
+			{
+				circle_count_engineer(&temp_chassis_yaw,(U32)((int16_t)(RxMessage.Data[5]<<8|RxMessage.Data[4])+1800),3600,400);
+				engineer.chassis.YAW=(temp_chassis_yaw.angle+temp_chassis_yaw.circle*3600);
+			}
+			
 		}
 	}
 }
 
-float Real_Center = 0,Dir_angle = 0,Dir_angle_adj = 0;	//云台与底盘夹角相关
+float Real_Center = 0,Dir_angle = 0,Dir_angle_adj = 22;	//云台与底盘夹角相关
 int Dir_circle = 0;										//云台相对底盘旋转的圈数
 
 int16_t mpu_yaw_speed;				//mpu6050角速度
@@ -262,7 +276,7 @@ void	CAN2_RX0_IRQHandler(void)
 
 	if(CAN_GetITStatus(CAN2, CAN_IT_FMP0) != RESET)
 	{
-		static u8 flag_relief[2]={0,0},flag_chassis[4]={0,0,0,0},flag_holder=0,flag_yaw = 0;
+		static u8 flag_relief[2]={0,0},flag_chassis[4]={0,0,0,0},flag_holder=0;
 		CAN_ClearITPendingBit(CAN2, CAN_IT_FMP0);
 		CAN_ClearFlag(CAN2, CAN_FLAG_FMP0); 
 		
@@ -330,49 +344,28 @@ void	CAN2_RX0_IRQHandler(void)
 				canrate.inc.rx_motor[5]++;
 			}
 			//云台
-			if (RxMessage.StdId == 0x207)
+			if(RxMessage.StdId == 0x207)
 			{
-				engineer_control.holder.yaw_angle= ((S32)(motor_circle_simple[1][6].angle) + motor_circle_simple[1][6].circle * 8192 - holder_init_position[0]) / 55.5f;
-				
-				if (!flag_holder)
-				{
-					if (engineer_control.holder.yaw_angle!= 0)
+			  engineer_control.holder.position_C  = (S32)(motor_circle_simple[1][6].angle) + motor_circle_simple[1][6].circle*8192-holder_init_position;
+			  if(!flag_holder)
+			  {
+					if(engineer_control.holder.position_C!=0)
 					{
-						holder_init_position[0] = engineer_control.holder.yaw_angle;
-						look1 = engineer_control.holder.yaw_angle;
-						flag_holder = 1;
+						lift_x_init_position=engineer_control.holder.position_C;
+						flag_holder=1;
 					}
-				}
-				
-				Dir_angle = (engineer_control.holder.yaw_angle - engineer_control.holder.position_C) * 360 / 8192 +Dir_angle_adj;
-				
-        if(Dir_angle > 180)
-					Dir_angle -= 360;
-				
-				if(Dir_angle < -180)
-					Dir_angle += 360;
-				
-				engineer_control.holder.speed_C = (float)RPC_ZERO((S16)(RxMessage.Data[2] << 8 | RxMessage.Data[3]), 10);
-				engineer_control.holder.current_C = engineer_control.holder.current_C * (1 - n) + n * (float)RPC_ZERO((S16)(RxMessage.Data[4] << 8 | RxMessage.Data[5]), 10);
+			  }
+				engineer_control.holder.angle_T =-engineer_control.holder.position_C*360/8192/55;
+				engineer_control.holder.speed_C=(float)RPC_ZERO((S16)(RxMessage.Data[2]<<8|RxMessage.Data[3]),10);
+				engineer_control.holder.current_C=engineer_control.holder.current_C*(1-n)+n*(float)RPC_ZERO((S16)(RxMessage.Data[4]<<8|RxMessage.Data[5]),10);
 				canrate.inc.rx_motor[6]++;
 			}
-
+			//底盘测试用陀螺仪
 			if(RxMessage.StdId == 0x513)
 			{
-				circle_count_engineer(&temp_chassis_yaw,((int16_t)(RxMessage.Data[5]<<8|RxMessage.Data[4]) + 1800),3600,400);
-				engineer.chassis.YAW = (temp_chassis_yaw.angle+temp_chassis_yaw.circle * 3600);
-				
-				engineer_control.holder.position_C = -(engineer.chassis.YAW - holder_init_position[1]) * 819 / 360;
-				if (!flag_yaw)
-				{
-					if (engineer_control.holder.position_C != 0)
-					{
-						holder_init_position[1] = engineer.chassis.YAW;
-						flag_yaw = 1;
-					}
-				}
+				circle_count_engineer(&temp_chassis_yaw,(U32)((int16_t)(RxMessage.Data[5]<<8|RxMessage.Data[4])+1800),3600,400);
+				engineer.chassis.YAW=(temp_chassis_yaw.angle+temp_chassis_yaw.circle*3600);
 			}
-			
 //			//以下为云台电机反馈信号处理，根据不同机器人分别处理
 //			if(RxMessage.StdId == 0x205)
 //			{
